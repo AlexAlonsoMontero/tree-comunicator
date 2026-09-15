@@ -120,6 +120,8 @@ La IA no diagnosticará, no enviará SMS por sí sola y no modificará el árbol
 
 - [Definición del proyecto](docs/DEFINICION_PROYECTO.md)
 - [Análisis de requisitos](docs/ANALISIS_REQUISITOS.md)
+- [Flujo de trabajo con GitHub](docs/FLUJO_DE_TRABAJO.md)
+- [Registro de cambios](CHANGELOG.md)
 
 ## Referencias iniciales
 

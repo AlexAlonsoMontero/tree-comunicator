@@ -61,10 +61,23 @@ No fijar proveedor, modelo ni límites de IA hasta la evaluación futura definid
 - Validar en tablet Android real los SMS, TTS offline y la pulsación mantenida.
 - Antes de integrar cambios, ejecutar tipos, lint, comprobación arquitectónica, pruebas y cobertura. El pre-commit solo debe realizar comprobaciones rápidas de archivos modificados.
 
+### Estrategia de pruebas
+
+- Aplicar TDD de forma selectiva, no como ritual universal.
+- Escribir primero pruebas para reglas puras y críticas: navegación, pulsación mantenida, composición de frases, episodios y límites SMS, y priorización.
+- En casos de uso, escribir la prueba antes o inmediatamente después de implementar, según la claridad del comportamiento.
+- Para interfaz, priorizar pruebas de los flujos críticos; no crear pruebas unitarias de estilo, textos o maquetación sin lógica.
+- En exploraciones o prototipos, validar primero la propuesta y añadir pruebas cuando el comportamiento se consolide.
+- Cada prueba debe enlazar, cuando aplique, con los requisitos `RF`, `RA`, `RD`, `RS` o `RNF`.
+
 ## Forma de trabajo
 
 - Preferir cambios pequeños y verificables.
+- Usar GitHub Flow: cada issue se desarrolla en una rama creada desde `main` y se integra mediante una pull request con *squash merge*; no hacer *push* directo a `main`.
+- Cada pull request debe enlazar la issue que cierra, indicar los requisitos afectados y actualizar `CHANGELOG.md` en `Unreleased` cuando cambie el producto.
+- Las versiones se gestionan con hitos, etiquetas Git y `CHANGELOG.md`; crear una rama `release/x.y.z` solo durante la estabilización de una versión relevante.
 - Mantener nombres y textos de interfaz en español.
 - No usar red para funciones centrales ni convertir la IA en dependencia del comunicador.
 - No introducir permisos Android, dependencias o servicios externos sin justificarlo y actualizar requisitos/documentación.
 - No enviar SMS reales durante pruebas automatizadas; usar adaptadores falsos y pruebas instrumentadas controladas.
+- Antes de crear o recomendar agentes, subagentes o skills, avisar al usuario, explicar qué tarea concreta cubrirían y por qué resultan rentables en ese punto del proyecto. No crearlos sin solicitud o confirmación expresa del usuario.
