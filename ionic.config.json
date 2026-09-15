@@ -1,0 +1,7 @@
+{
+  "name": "Tree Communicator",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
