@@ -1,0 +1,117 @@
+:host {
+  display: block;
+  background: var(--tc-background);
+  color: var(--tc-text);
+}
+
+.communicator-shell {
+  --background: var(--tc-background);
+  --color: var(--tc-text);
+}
+
+.communicator {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: minmax(5.5rem, auto) 1fr minmax(5.5rem, auto);
+  gap: 1rem;
+  padding: max(clamp(0.75rem, 2vw, 1.5rem), var(--ion-safe-area-top))
+    max(clamp(0.75rem, 2vw, 1.5rem), var(--ion-safe-area-right))
+    max(clamp(0.75rem, 2vw, 1.5rem), var(--ion-safe-area-bottom))
+    max(clamp(0.75rem, 2vw, 1.5rem), var(--ion-safe-area-left));
+  background: var(--tc-background);
+}
+
+.communicator__bar {
+  display: grid;
+  align-items: center;
+  gap: 1rem;
+}
+
+.communicator__bar--top {
+  grid-template-columns: minmax(8rem, 1fr) minmax(16rem, 2fr) minmax(8rem, 1fr);
+}
+
+.communicator__bar--bottom {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.current-phrase {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 0.25rem solid var(--tc-border);
+  border-radius: 1rem;
+  background: var(--tc-surface);
+  color: var(--tc-text);
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.communication-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(9rem, 1fr));
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  min-height: 0;
+}
+
+.communication-option,
+.control-button {
+  border: 0.25rem solid var(--tc-border);
+  border-radius: 1.25rem;
+  color: var(--tc-text);
+  box-shadow: 0 0.25rem 0 rgba(0, 0, 0, 0.35);
+}
+
+.communication-option:focus-visible,
+.control-button:focus-visible {
+  outline: 0.35rem solid var(--tc-focus);
+  outline-offset: 0.2rem;
+  transform: scale(1.02);
+}
+
+.communication-option {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  min-height: 9rem;
+  padding: 1rem;
+}
+
+.communication-option__pictogram {
+  font-size: clamp(3rem, 7vw, 5rem);
+  line-height: 1;
+}
+
+.communication-option__label {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.control-button {
+  min-height: 4.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--tc-control);
+  font-size: clamp(1.25rem, 2.6vw, 1.5rem);
+  font-weight: 800;
+}
+
+.option--amber {
+  background: var(--tc-option-amber);
+}
+
+.option--teal {
+  background: var(--tc-option-teal);
+}
+
+.option--eggplant {
+  background: var(--tc-option-eggplant);
+}
+
+.option--burgundy {
+  background: var(--tc-option-burgundy);
+}

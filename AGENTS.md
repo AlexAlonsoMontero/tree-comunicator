@@ -7,6 +7,7 @@ Antes de cambiar comportamiento o arquitectura, consulta:
 - `README.md`: visión y stack confirmado.
 - `docs/DEFINICION_PROYECTO.md`: definición funcional y arquitectura.
 - `docs/ANALISIS_REQUISITOS.md`: requisitos identificados `RF`, `RA`, `RD`, `RS` y `RNF`.
+- `docs/GUIA_DESARROLLO.md`: normas de arquitectura, SOLID, Angular/Ionic, SCSS, accesibilidad y validación.
 
 Actualiza los documentos cuando una decisión funcional o técnica cambie. No inventes decisiones pendientes: plantea la propuesta y espera confirmación.
 
@@ -30,6 +31,8 @@ Mantener arquitectura hexagonal pragmática:
 
 El dominio y aplicación no importan Angular, Ionic, Capacitor, SQLite ni APIs Android. Crear contratos solo en fronteras reales; evitar interfaces de una sola implementación sin valor.
 
+Aplica SOLID con criterio práctico: responsabilidades pequeñas, composición antes que herencia, puertos estrechos y dependencia de abstracciones solo cuando exista una frontera real. Evita servicios o componentes que mezclen UI, persistencia, navegación y reglas de negocio.
+
 ## Stack confirmado
 
 - Ionic Angular y TypeScript.
@@ -52,6 +55,17 @@ No fijar proveedor, modelo ni límites de IA hasta la evaluación futura definid
 - No implementar llamadas ni WhatsApp.
 - Una clave de IA nunca se escribe en código, SQLite, archivos ni copias; usar exclusivamente el plugin respaldado por Android Keystore.
 
+## Angular, Ionic y estilos
+
+- Usar Angular standalone components.
+- Mantener nombres y textos visibles de interfaz en español.
+- Las páginas Ionic no concentran reglas de negocio; delegan en casos de uso o adaptadores de presentación.
+- Respetar safe areas de Android; no dibujar bajo barras del sistema salvo decisión explícita.
+- Usar SCSS con metodología BEM para clases de presentación: bloque, `__elemento`, `--modificador`.
+- Usar variables CSS para tokens reutilizables: colores, espaciado, radios, bordes, tipografía, sombras, duraciones y z-index.
+- Centralizar tokens de producto en `src/theme/variables.scss` siempre que sea razonable; no hardcodear colores repetidos en componentes.
+- Reservar `src/global.scss` para imports Ionic, resets mínimos y reglas realmente globales.
+
 ## Calidad y validación
 
 - TypeScript estricto: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` y `noImplicitOverride`.
@@ -60,11 +74,14 @@ No fijar proveedor, modelo ni límites de IA hasta la evaluación futura definid
 - Objetivos mínimos: 80 % global, 95 % en dominio/aplicación y 100 % de decisiones críticas de navegación y SMS.
 - Validar en tablet Android real los SMS, TTS offline y la pulsación mantenida.
 - Antes de integrar cambios, ejecutar tipos, lint, comprobación arquitectónica, pruebas y cobertura. El pre-commit solo debe realizar comprobaciones rápidas de archivos modificados.
+- Si una comprobación no puede ejecutarse, indicar el motivo y el comando pendiente.
 
 ## Forma de trabajo
 
 - Preferir cambios pequeños y verificables.
-- Mantener nombres y textos de interfaz en español.
+- Leer `docs/GUIA_DESARROLLO.md` antes de modificar arquitectura, UI, estilos o comportamiento.
 - No usar red para funciones centrales ni convertir la IA en dependencia del comunicador.
 - No introducir permisos Android, dependencias o servicios externos sin justificarlo y actualizar requisitos/documentación.
 - No enviar SMS reales durante pruebas automatizadas; usar adaptadores falsos y pruebas instrumentadas controladas.
+- Dejar evidencia de comandos ejecutados, pruebas pendientes y limitaciones conocidas.
+- No cerrar una tarea si queda una prueba crítica fallando o sin ejecutar sin explicación.

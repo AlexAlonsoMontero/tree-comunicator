@@ -120,6 +120,7 @@ La IA no diagnosticará, no enviará SMS por sí sola y no modificará el árbol
 
 - [Definición del proyecto](docs/DEFINICION_PROYECTO.md)
 - [Análisis de requisitos](docs/ANALISIS_REQUISITOS.md)
+- [Guía de desarrollo](docs/GUIA_DESARROLLO.md)
 
 ## Referencias iniciales
 

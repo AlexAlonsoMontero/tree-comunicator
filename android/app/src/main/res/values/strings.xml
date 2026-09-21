@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tree Communicator</string>
+    <string name="title_activity_main">Tree Communicator</string>
+    <string name="package_name">com.treecommunicator.app</string>
+    <string name="custom_url_scheme">com.treecommunicator.app</string>
+</resources>
