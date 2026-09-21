@@ -1,0 +1,28 @@
+<ion-content class="communicator-shell">
+  <main class="communicator" aria-labelledby="current-phrase">
+    <nav class="communicator__bar communicator__bar--top" aria-label="Navegación principal">
+      <button class="control-button" type="button" aria-label="Volver al nivel anterior">Atrás</button>
+      <h1 id="current-phrase" class="current-phrase" aria-live="polite">{{ currentPhrase }}</h1>
+      <button class="control-button" type="button" aria-label="Volver al inicio">Inicio</button>
+    </nav>
+
+    <section class="communication-grid" aria-label="Opciones de comunicación">
+      @for (option of communicationOptions; track option.label) {
+        <button
+          class="communication-option {{ option.colorClass }}"
+          type="button"
+          [attr.aria-label]="option.ariaLabel"
+        >
+          <span class="communication-option__pictogram" aria-hidden="true">{{ option.emoji }}</span>
+          <span class="communication-option__label">{{ option.label }}</span>
+        </button>
+      }
+    </section>
+
+    <nav class="communicator__bar communicator__bar--bottom" aria-label="Controles del comunicador">
+      <button class="control-button" type="button" aria-label="Repetir la opción enfocada o la frase actual">Repetir</button>
+      <button class="control-button" type="button" aria-label="Mostrar otras opciones de comunicación">Otras opciones</button>
+      <button class="control-button" type="button" aria-label="Abrir configuración con pulsación mantenida">Configuración</button>
+    </nav>
+  </main>
+</ion-content>
