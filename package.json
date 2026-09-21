@@ -11,7 +11,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:ci": "ng test --configuration ci",
+    "ci": "pnpm build && pnpm lint && pnpm typecheck && pnpm test:ci && pnpm exec cap sync android && cd android && ./gradlew assembleDebug"
   },
   "private": true,
   "dependencies": {
