@@ -13,7 +13,11 @@
     "lint": "ng lint",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:ci": "ng test --configuration ci",
-    "ci": "pnpm build && pnpm lint && pnpm typecheck && pnpm test:ci && pnpm exec cap sync android && cd android && ./gradlew assembleDebug"
+    "ci": "pnpm format:check && pnpm build && pnpm lint && pnpm typecheck && pnpm arch && pnpm coverage && pnpm exec cap sync android && cd android && ./gradlew assembleDebug",
+    "format": "prettier --ignore-unknown --write package.json eslint.config.js .dependency-cruiser.cjs .prettierrc.json .prettierignore .github/workflows/ci.yml AGENTS.md README.md docs/GUIA_DESARROLLO.md odd/tasks/issue-4-configurar-arquitectura-hexagonal-controles-calidad.md \"src/app/**/*.{ts,html,scss,md}\"",
+    "format:check": "prettier --ignore-unknown --check package.json eslint.config.js .dependency-cruiser.cjs .prettierrc.json .prettierignore .github/workflows/ci.yml AGENTS.md README.md docs/GUIA_DESARROLLO.md odd/tasks/issue-4-configurar-arquitectura-hexagonal-controles-calidad.md \"src/app/**/*.{ts,html,scss,md}\"",
+    "arch": "depcruise src/app --config .dependency-cruiser.cjs",
+    "coverage": "ng test --configuration ci --coverage"
   },
   "private": true,
   "dependencies": {
@@ -41,9 +45,12 @@
     "@angular/language-service": "22.1.7",
     "@capacitor/cli": "8.5.2",
     "@ionic/angular-toolkit": "^13.0.0",
+    "@vitest/coverage-v8": "~4.0.18",
     "angular-eslint": "22.0.0",
+    "dependency-cruiser": "^17.3.0",
     "eslint": "^10.10.0",
     "jsdom": "^26.0.0",
+    "prettier": "^3.6.2",
     "typescript": "~6.0.0",
     "typescript-eslint": "^8.61.0",
     "vitest": "~4.0.18"
