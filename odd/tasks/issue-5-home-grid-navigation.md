@@ -28,17 +28,23 @@ The existing home screen is visual-only: its communication options are static an
 
 ## TDD and delivery
 - TDD mode: off; source: no explicit project or session TDD configuration was found. Focused ordinary checks were used.
-- Forecast: about 180 authored changed lines.
-- Delivery strategy: ask-on-risk.
-- Commit: pending explicit user authorization under repository policy.
+- Forecast: about 180 authored changed lines for `NAV-01`; actual work-unit size was 444 additions including the ODD task document.
+- Delivery strategy: single-pr. User selected one PR for the complete issue after the feature branch crossed the 400-line advisory review threshold.
+- Commit: `b723423` (`feat(navigation): add communication tree state`).
 
 ## Tasks
 - [x] `NAV-01` Implement and test the pure communication-tree navigation model. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write (new domain source and test files). Verification: writer and independent verifier both passed `pnpm test:ci` and `pnpm typecheck`; parent performed structural readback and `git diff --check`.
-- [ ] `NAV-02` Create the work-unit commit after explicit user authorization. Route: inline direct. Verification: inspect staged diff and record the commit identity.
+- [x] `NAV-02` Create the work-unit commit. Route: inline direct. Evidence: `b723423` (`feat(navigation): add communication tree state`).
+- [x] `NAV-03` Implement and test the communicator state coordinator: current navigation state, confirmed path-derived phrase, and local no-option fallback state. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. Verification: writer and independent verifier both passed `pnpm test:ci` and `pnpm typecheck`; native assessment was unavailable, so independent verification followed the fail-closed path.
+- [x] `NAV-04` Create the communicator-state work-unit commit after explicit user authorization. Route: inline direct. Evidence: pending commit identity.
 
 ## Progress
 - 2026-09-03: Feature document created.
 - 2026-09-03: `NAV-01` implemented and independently verified. No correctness blockers were found.
+- 2026-09-03: `NAV-01` committed as `b723423` with explicit user authorization.
+- 2026-09-03: User selected the `single-pr` delivery strategy.
+- 2026-09-03: `NAV-03` implemented and independently verified. No correctness blockers were found.
+- 2026-09-03: User explicitly authorized the `NAV-03` work-unit commit.
 
 ## Evidence
 - `src/app/domain/communication-navigation.ts`: pure node model and navigation state/view functions.
@@ -47,6 +53,9 @@ The existing home screen is visual-only: its communication options are static an
 - Independent verification: the same test and typecheck commands passed; no Angular/Ionic/Capacitor dependency was found.
 - Parent structural check: `git diff --check` passed.
 - Native risk assessment: unavailable because the native command returned empty output; independent verification was run as the fail-closed high-risk path.
+- `src/app/application/communicator-state.ts`: framework-independent state coordinator exposing navigation, derived phrase, and local fallback availability.
+- `src/app/application/communicator-state.spec.ts`: 9 tests for initial state, selection, phrase composition, invalid input, pagination, fallback, back, and reset.
+- `NAV-03` writer verification: `pnpm test:ci` passed (4 files, 19 tests); `pnpm typecheck` passed. The independent verifier observed the same results; Browserslist warnings are pre-existing.
 
 ## Next step
-Request explicit authorization to create the Conventional Commit work unit for `NAV-01`; do not alter presentation until the next authorized issue point.
+Continue with the next authorized issue point; do not alter presentation until it is explicitly authorized.
