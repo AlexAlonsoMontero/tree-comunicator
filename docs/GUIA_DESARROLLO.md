@@ -14,7 +14,9 @@ src/
 └── presentation/     # Ionic Angular, componentes, páginas y estilos
 ```
 
-Mientras la estructura completa no exista, los cambios deben prepararla y no contradecirla.
+La estructura base vive bajo `src/app/domain`, `src/app/application`, `src/app/infrastructure` y `src/app/presentation`. Cada carpeta empieza con un `README.md` y solo debe recibir código cuando exista una responsabilidad real.
+
+Decisión de issue #4: este paso configura capas y controles de calidad sin crear puertos falsos, interfaces vacías ni adaptadores simulados. Playwright y hooks de pre-commit se incorporarán cuando existan flujos reales que validar; hasta entonces, CI es la puerta de integración.
 
 Reglas obligatorias:
 
@@ -56,12 +58,18 @@ Evitar especialmente:
 Las clases de presentación deben seguir BEM:
 
 ```scss
-.communicator {}
-.communicator__bar {}
-.communicator__bar--top {}
-.communication-option {}
-.communication-option__label {}
-.communication-option--focused {}
+.communicator {
+}
+.communicator__bar {
+}
+.communicator__bar--top {
+}
+.communication-option {
+}
+.communication-option__label {
+}
+.communication-option--focused {
+}
 ```
 
 Reglas:
@@ -123,10 +131,13 @@ Los estilos específicos pertenecen al SCSS del componente o a componentes reuti
 Antes de integrar cambios de código, ejecutar lo que aplique:
 
 ```bash
-pnpm build
+pnpm format:check
 pnpm lint
 pnpm typecheck
-pnpm test
+pnpm arch
+pnpm test:ci
+pnpm coverage
+pnpm build
 pnpm exec cap sync android
 cd android && ./gradlew assembleDebug
 ```

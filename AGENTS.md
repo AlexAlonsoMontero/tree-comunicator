@@ -29,7 +29,9 @@ Mantener arquitectura hexagonal pragmática:
 3. `infrastructure`: adaptadores de SQLite, archivos, TTS, SMS, Keystore y red.
 4. `presentation`: Ionic Angular.
 
-El dominio y aplicación no importan Angular, Ionic, Capacitor, SQLite ni APIs Android. Crear contratos solo en fronteras reales; evitar interfaces de una sola implementación sin valor.
+El dominio y aplicación no importan Angular, Ionic, Capacitor, SQLite ni APIs Android. Crear contratos solo en fronteras reales; evitar interfaces de una sola implementación sin valor. La estructura base se mantiene bajo `src/app/domain`, `src/app/application`, `src/app/infrastructure` y `src/app/presentation`.
+
+Decisión issue #4: configurar límites y CI primero; no añadir puertos falsos, hooks de pre-commit ni Playwright hasta que existan flujos reales que los justifiquen. CI es la puerta de integración.
 
 Aplica SOLID con criterio práctico: responsabilidades pequeñas, composición antes que herencia, puertos estrechos y dependencia de abstracciones solo cuando exista una frontera real. Evita servicios o componentes que mezclen UI, persistencia, navegación y reglas de negocio.
 
@@ -73,7 +75,7 @@ No fijar proveedor, modelo ni límites de IA hasta la evaluación futura definid
 - Vitest para dominio y aplicación; Playwright para flujos de interfaz críticos.
 - Objetivos mínimos: 80 % global, 95 % en dominio/aplicación y 100 % de decisiones críticas de navegación y SMS.
 - Validar en tablet Android real los SMS, TTS offline y la pulsación mantenida.
-- Antes de integrar cambios, ejecutar tipos, lint, comprobación arquitectónica, pruebas y cobertura. El pre-commit solo debe realizar comprobaciones rápidas de archivos modificados.
+- Antes de integrar cambios, ejecutar formato, tipos, lint, comprobación arquitectónica, pruebas, cobertura, sincronización Capacitor y build Android. El pre-commit se añadirá más adelante solo si aporta comprobaciones rápidas de archivos modificados.
 - Si una comprobación no puede ejecutarse, indicar el motivo y el comando pendiente.
 
 ## Forma de trabajo

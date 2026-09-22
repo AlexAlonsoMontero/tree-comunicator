@@ -116,6 +116,20 @@ La IA no diagnosticará, no enviará SMS por sí sola y no modificará el árbol
 - Dispositivos: móvil desde 5,5 pulgadas y tablet entre 8 y 13 pulgadas.
 - Dispositivo de referencia para diseño y pruebas: tablet de 10 pulgadas.
 
+## Comandos de calidad
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm arch
+pnpm test:ci
+pnpm coverage
+pnpm build
+```
+
+`pnpm run ci` ejecuta la puerta local completa, incluyendo sincronización Capacitor y `./gradlew assembleDebug` dentro de `android`. Playwright queda fuera hasta que existan flujos de interfaz reales.
+
 ## Documentación
 
 - [Definición del proyecto](docs/DEFINICION_PROYECTO.md)

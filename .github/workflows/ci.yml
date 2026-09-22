@@ -62,6 +62,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Build web app
         run: pnpm build
 
@@ -71,8 +74,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test:ci
+      - name: Architecture check
+        run: pnpm arch
+
+      - name: Coverage
+        run: pnpm coverage
 
       - name: Sync Capacitor Android
         run: pnpm exec cap sync android
