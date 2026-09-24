@@ -36,7 +36,9 @@ The existing home screen is visual-only: its communication options are static an
 - [x] `NAV-01` Implement and test the pure communication-tree navigation model. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write (new domain source and test files). Verification: writer and independent verifier both passed `pnpm test:ci` and `pnpm typecheck`; parent performed structural readback and `git diff --check`.
 - [x] `NAV-02` Create the work-unit commit. Route: inline direct. Evidence: `b723423` (`feat(navigation): add communication tree state`).
 - [x] `NAV-03` Implement and test the communicator state coordinator: current navigation state, confirmed path-derived phrase, and local no-option fallback state. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. Verification: writer and independent verifier both passed `pnpm test:ci` and `pnpm typecheck`; native assessment was unavailable, so independent verification followed the fail-closed path.
-- [x] `NAV-04` Create the communicator-state work-unit commit after explicit user authorization. Route: inline direct. Evidence: pending commit identity.
+- [x] `NAV-04` Create the communicator-state work-unit commit after explicit user authorization. Route: inline direct. Evidence: `1d89a7b` (`feat(communicator): add navigation state coordinator`).
+- [x] `NAV-05` Bind communicator state to the home presentation: render coordinator options/phrase, confirm options on click, and wire Back, Start, and next-page controls. Route: delegated direct (`gentle-ai-worker`); trigger: four-file mapping and multi-file write. `No encuentro mi opción` is visible but intentionally has no action in this work unit. Verification: writer and independent verifier passed `pnpm test:ci` (4 files, 25 tests), `pnpm typecheck`, `pnpm lint`, and `pnpm arch`.
+- [x] `NAV-06` Create the HomePage binding work-unit commit after explicit user authorization. Route: inline direct. Evidence: pending commit identity.
 
 ## Progress
 - 2026-09-03: Feature document created.
@@ -44,7 +46,10 @@ The existing home screen is visual-only: its communication options are static an
 - 2026-09-03: `NAV-01` committed as `b723423` with explicit user authorization.
 - 2026-09-03: User selected the `single-pr` delivery strategy.
 - 2026-09-03: `NAV-03` implemented and independently verified. No correctness blockers were found.
-- 2026-09-03: User explicitly authorized the `NAV-03` work-unit commit.
+- 2026-09-03: User explicitly authorized the `NAV-03` work-unit commit; committed as `1d89a7b`.
+- 2026-09-03: User selected a visible, intentionally inactive `No encuentro mi opción` control for `NAV-05`; the local rescue flow remains a later work unit.
+- 2026-09-03: `NAV-05` implemented and independently verified. No correctness blockers were found.
+- 2026-09-03: User explicitly authorized the `NAV-05` work-unit commit only; the local rescue flow remains pending.
 
 ## Evidence
 - `src/app/domain/communication-navigation.ts`: pure node model and navigation state/view functions.
@@ -56,6 +61,9 @@ The existing home screen is visual-only: its communication options are static an
 - `src/app/application/communicator-state.ts`: framework-independent state coordinator exposing navigation, derived phrase, and local fallback availability.
 - `src/app/application/communicator-state.spec.ts`: 9 tests for initial state, selection, phrase composition, invalid input, pagination, fallback, back, and reset.
 - `NAV-03` writer verification: `pnpm test:ci` passed (4 files, 19 tests); `pnpm typecheck` passed. The independent verifier observed the same results; Browserslist warnings are pre-existing.
+- `src/app/presentation/pages/home/home.page.ts`, `.html`, `.scss`, and `.spec.ts`: coordinator-backed HomePage integration with a presentation seed tree, controls outside the grid, and a disabled terminal fallback control.
+- `NAV-05` verification: writer and independent verifier passed `pnpm test:ci` (4 files, 25 tests), `pnpm typecheck`, `pnpm lint`, and `pnpm arch`. Browserslist warnings are pre-existing.
+- Untracked `.codegraph/` appeared during delegated work and was preserved; it is not part of `NAV-05`.
 
 ## Next step
-Continue with the next authorized issue point; do not alter presentation until it is explicitly authorized.
+Request explicit authorization to commit `NAV-05`; leave the local rescue flow for a later authorized work unit.
