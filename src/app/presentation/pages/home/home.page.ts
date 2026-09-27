@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject, InjectionToken, OnDestroy } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 
 import {
@@ -7,6 +7,8 @@ import {
   LocalRescueOption,
 } from '../../../application/communicator-state';
 import { CommunicationNode } from '../../../domain/communication-navigation';
+import { VoiceOutput } from '../../../application/voice-output';
+import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
 
 interface CommunicationOptionView {
   readonly id: string;
@@ -15,6 +17,8 @@ interface CommunicationOptionView {
   readonly ariaLabel: string;
   readonly colorClass: string;
 }
+
+export const VOICE_OUTPUT = new InjectionToken<VoiceOutput>('VOICE_OUTPUT');
 
 const INITIAL_PHRASE_FALLBACK = 'Elegí una opción';
 
@@ -328,11 +332,26 @@ const RESCUE_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
   imports: [IonContent],
+  providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }],
 })
-export class HomePage {
+export class HomePage implements OnDestroy {
   readonly #communicator = createCommunicatorStateCoordinator(PRESENTATION_SEED_TREE);
+  readonly #voice = inject(VOICE_OUTPUT);
 
   protected snapshot: CommunicatorSnapshot = this.#communicator.snapshot;
+  protected focusedOptionId: string | null = null;
+  protected confirmingOptionId: string | null = null;
+  protected confirmationProgress = 0;
+  readonly #longPressDuration = 800;
+  #pressTimer: ReturnType<typeof setTimeout> | undefined;
+  #progressTimer: ReturnType<typeof setInterval> | undefined;
+  #pressStartedAt = 0;
+  #pressedOptionId: string | null = null;
+  #spokenFocusedPressOptionId: string | null = null;
+
+  ngOnDestroy(): void {
+    this.cancelPress();
+  }
 
   protected get currentPhrase(): string {
     return this.snapshot.currentPhrase || INITIAL_PHRASE_FALLBACK;
@@ -373,10 +392,93 @@ export class HomePage {
       : 'No encuentro mi opción; mostrar alternativas locales de rescate';
   }
 
+  protected focusOption(optionId: string): void {
+    this.cancelPress();
+    this.focusedOptionId = optionId;
+    const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
+    if (option !== undefined) void this.speak(option.label);
+  }
+
+  protected beginPress(optionId: string, event?: Event): void {
+    if ((event instanceof KeyboardEvent && event.repeat) || this.#pressedOptionId === optionId) {
+      return;
+    }
+
+    const shouldReadFocusedOption =
+      this.#pressedOptionId !== null && this.#pressedOptionId !== optionId;
+
+    this.cancelPress();
+    this.focusedOptionId = optionId;
+    if (shouldReadFocusedOption) {
+      const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
+      if (option !== undefined) {
+        this.#spokenFocusedPressOptionId = optionId;
+        void this.speak(option.label);
+      }
+    }
+    this.#pressedOptionId = optionId;
+    this.#pressStartedAt = Date.now();
+    this.confirmationProgress = 0;
+    this.#progressTimer = setInterval(() => {
+      this.confirmationProgress = Math.min(
+        100,
+        ((Date.now() - this.#pressStartedAt) / this.#longPressDuration) * 100,
+      );
+    }, 20);
+    this.#pressTimer = setTimeout(() => this.confirmOption(optionId), this.#longPressDuration);
+  }
+
+  protected endPress(optionId: string): void {
+    if (this.#pressedOptionId !== optionId) return;
+    const wasShortPress = Date.now() - this.#pressStartedAt < this.#longPressDuration;
+    const wasFocusAlreadySpoken = this.#spokenFocusedPressOptionId === optionId;
+    this.cancelPress();
+    if (wasShortPress && !wasFocusAlreadySpoken) {
+      this.focusedOptionId = optionId;
+      const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
+      if (option !== undefined) void this.speak(option.label);
+    }
+  }
+
   protected confirmOption(optionId: string): void {
+    if (this.#pressedOptionId !== optionId) return;
+    this.cancelPress();
+    this.confirmingOptionId = optionId;
+    const selectedLabel = this.communicationOptions.find(
+      (candidate) => candidate.id === optionId,
+    )?.label;
     this.snapshot = this.snapshot.isRescueModeActive
       ? this.#communicator.chooseLocalRescueOption(optionId)
       : this.#communicator.confirmNode(optionId);
+    void this.speak(this.snapshot.currentPhrase || selectedLabel || 'Opción confirmada');
+    setTimeout(() => {
+      this.confirmingOptionId = null;
+    }, 500);
+  }
+
+  protected repeatFocused(): void {
+    const option = this.communicationOptions.find(
+      (candidate) => candidate.id === this.focusedOptionId,
+    );
+    void this.speak(option?.label ?? this.currentPhrase);
+  }
+
+  protected cancelPress(): void {
+    if (this.#pressTimer !== undefined) clearTimeout(this.#pressTimer);
+    if (this.#progressTimer !== undefined) clearInterval(this.#progressTimer);
+    this.#pressTimer = undefined;
+    this.#progressTimer = undefined;
+    this.#pressedOptionId = null;
+    this.#spokenFocusedPressOptionId = null;
+    this.confirmationProgress = 0;
+  }
+
+  private async speak(text: string): Promise<void> {
+    try {
+      await this.#voice.speak(text);
+    } catch {
+      /* Voice remains optional when Android lacks an offline Spanish voice. */
+    }
   }
 
   protected goBack(): void {

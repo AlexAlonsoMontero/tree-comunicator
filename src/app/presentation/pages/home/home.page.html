@@ -24,9 +24,30 @@
       @for (option of communicationOptions; track option.id) {
         <button
           class="communication-option {{ option.colorClass }}"
+          [class.communication-option--focused]="focusedOptionId === option.id"
+          [class.communication-option--confirming]="
+            confirmingOptionId === option.id ||
+            (confirmationProgress > 0 && focusedOptionId === option.id)
+          "
+          [style.--confirmation-progress]="confirmationProgress + '%'"
           type="button"
           [attr.aria-label]="option.ariaLabel"
-          (click)="confirmOption(option.id)"
+          [attr.aria-pressed]="focusedOptionId === option.id"
+          [attr.aria-busy]="
+            confirmingOptionId === option.id ||
+            (confirmationProgress > 0 && focusedOptionId === option.id)
+              ? 'true'
+              : null
+          "
+          (pointerdown)="beginPress(option.id)"
+          (pointerup)="endPress(option.id)"
+          (pointerleave)="cancelPress()"
+          (pointercancel)="cancelPress()"
+          (keydown.enter)="beginPress(option.id, $event)"
+          (keyup.enter)="endPress(option.id)"
+          (keydown.space)="beginPress(option.id, $event)"
+          (keyup.space)="endPress(option.id)"
+          (contextmenu)="$event.preventDefault()"
         >
           <span class="communication-option__pictogram" aria-hidden="true">{{ option.emoji }}</span>
           <span class="communication-option__label">{{ option.label }}</span>
@@ -39,6 +60,7 @@
         class="control-button"
         type="button"
         aria-label="Repetir la opción enfocada o la frase actual"
+        (click)="repeatFocused()"
       >
         Repetir
       </button>

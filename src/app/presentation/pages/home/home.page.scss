@@ -78,6 +78,52 @@
   gap: 0.75rem;
   min-height: 9rem;
   padding: 1rem;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.communication-option::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0.45rem;
+  inset-inline-start: 0.75rem;
+  width: var(--confirmation-progress, 0%);
+  max-width: calc(100% - 1.5rem);
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--tc-confirmation-progress);
+  box-shadow: 0 0 0 0.2rem var(--tc-confirmation-track);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.communication-option.communication-option--focused {
+  border-color: var(--tc-focus-contrast);
+  background: var(--tc-focus);
+  color: var(--tc-focus-contrast);
+  outline: 0.4rem double var(--tc-focus);
+  outline-offset: 0.18rem;
+  box-shadow:
+    0 0.45rem 0 var(--tc-focus-contrast),
+    0 0 0 0.25rem var(--tc-border);
+  transform: scale(1.05);
+}
+
+.communication-option.communication-option--confirming {
+  border-style: dashed;
+  outline-style: solid;
+  transform: scale(1.07);
+}
+
+.communication-option.communication-option--confirming::after {
+  opacity: 1;
 }
 
 .communication-option__pictogram {
