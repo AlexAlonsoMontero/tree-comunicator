@@ -100,3 +100,5 @@ Prevent accidental activations by announcing focus on a short press and confirmi
 - Confirmation progress remains cancellable and visually distinct through a dashed border, stronger scale, and a non-text progress bar.
 - Native platforms still require a locally installed Spanish voice; the web platform calls the browser SpeechSynthesis path with `lang: 'es-ES'` without requiring preloaded voices.
 - Focused checks: HomePage 22 tests passed, voice adapter 4 tests passed, and `pnpm typecheck` passed.
+- Commits: `f3d27f4 fix(issue-6): refine focus feedback and web voice`; `a80b1a6 style(issue-6): format focus styles`.
+- Final verifier1 recheck at `a80b1a6`: format check, focused tests (26), full tests (54), and typecheck passed; coverage and real-device Android validation remain pending.
