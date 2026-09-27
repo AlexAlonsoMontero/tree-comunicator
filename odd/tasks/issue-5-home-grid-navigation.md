@@ -38,7 +38,13 @@ The existing home screen is visual-only: its communication options are static an
 - [x] `NAV-03` Implement and test the communicator state coordinator: current navigation state, confirmed path-derived phrase, and local no-option fallback state. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. Verification: writer and independent verifier both passed `pnpm test:ci` and `pnpm typecheck`; native assessment was unavailable, so independent verification followed the fail-closed path.
 - [x] `NAV-04` Create the communicator-state work-unit commit after explicit user authorization. Route: inline direct. Evidence: `1d89a7b` (`feat(communicator): add navigation state coordinator`).
 - [x] `NAV-05` Bind communicator state to the home presentation: render coordinator options/phrase, confirm options on click, and wire Back, Start, and next-page controls. Route: delegated direct (`gentle-ai-worker`); trigger: four-file mapping and multi-file write. `No encuentro mi opción` is visible but intentionally has no action in this work unit. Verification: writer and independent verifier passed `pnpm test:ci` (4 files, 25 tests), `pnpm typecheck`, `pnpm lint`, and `pnpm arch`.
-- [x] `NAV-06` Create the HomePage binding work-unit commit after explicit user authorization. Route: inline direct. Evidence: pending commit identity.
+- [x] `NAV-06` Create the HomePage binding work-unit commit after explicit user authorization. Route: inline direct. Evidence: `1a753c0` (`feat(home): bind communicator navigation`).
+- [x] `NAV-07` Implement offline local rescue for the terminal fallback. Route: delegated direct (`gentle-ai-worker`); trigger: six-file write. Coordinator rescue mode exposes exactly `Necesito ayuda`, `No sé explicarlo`, `Volver`, and `Empezar de nuevo`; the first two set only a visible local phrase, and the last two restore/reset navigation. Writer and independent verifier passed all checks.
+- [x] `NAV-07a` Normalize the two domain files reported by `pnpm format:check`, without behavior changes. Route: delegated direct (`gentle-ai-worker`). Verification: Prettier formatting and full independent checks passed.
+- [x] `NAV-08` Create the local-rescue and review-correction work-unit commit after explicit user authorization. Route: inline direct. Evidence: pending commit identity.
+- [x] `NAV-09` Correct issue #5 review findings only: same-level previous-page Back, final nodes with optional details, RF-016 presentation seed coverage, and terminal local-rescue robustness. Route: delegated direct (`gentle-ai-worker`); trigger: eight-file write. Explicit non-goal: focus, TTS, and long-press behavior belong to issue #6. Writer and independent verifier passed format, lint, typecheck, architecture, tests (40), and coverage (94.26% global).
+- [x] `NAV-10` Complete RF-016 seed semantics: give every grouping category representative child alternatives with complete phrases and test their composition. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. All grouping roots omit incomplete `phrasePart` values and expose representative children with complete phrases. Writer and independent verifier passed format, lint, typecheck, architecture, and tests (42).
+- [ ] `NAV-11` Request a final independent review of the committed issue #5 candidate. Route: external reviewer. Verification: review report confirms issue #5 requirements only and excludes issue #6 interaction work.
 
 ## Progress
 - 2026-09-03: Feature document created.
@@ -49,7 +55,8 @@ The existing home screen is visual-only: its communication options are static an
 - 2026-09-03: User explicitly authorized the `NAV-03` work-unit commit; committed as `1d89a7b`.
 - 2026-09-03: User selected a visible, intentionally inactive `No encuentro mi opción` control for `NAV-05`; the local rescue flow remains a later work unit.
 - 2026-09-03: `NAV-05` implemented and independently verified. No correctness blockers were found.
-- 2026-09-03: User explicitly authorized the `NAV-05` work-unit commit only; the local rescue flow remains pending.
+- 2026-09-03: User explicitly authorized the `NAV-05` work-unit commit only; committed as `1a753c0`.
+- 2026-09-03: User authorized `NAV-07`; local rescue stays offline and changes only visible phrase state.
 
 ## Evidence
 - `src/app/domain/communication-navigation.ts`: pure node model and navigation state/view functions.
@@ -66,4 +73,4 @@ The existing home screen is visual-only: its communication options are static an
 - Untracked `.codegraph/` appeared during delegated work and was preserved; it is not part of `NAV-05`.
 
 ## Next step
-Request explicit authorization to commit `NAV-05`; leave the local rescue flow for a later authorized work unit.
+Obtain the final independent review for the uncommitted issue #5 candidate, then request explicit authorization for its work-unit commit. Do not add focus, TTS, long-press, SMS, persistence, AI, or network behavior.

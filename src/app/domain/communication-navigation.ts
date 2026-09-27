@@ -34,6 +34,7 @@ export interface CommunicationNavigationView {
 interface NavigationHistoryEntry {
   readonly parentId: string | null;
   readonly pageIndex: number;
+  readonly confirmedPath: readonly string[];
 }
 
 interface NavigationModel {
@@ -90,15 +91,23 @@ export function enterChildLevel(
     return deriveCommunicationNavigationView(nodes, state).state;
   }
 
+  const currentView = deriveCommunicationNavigationView(nodes, state);
+  const currentConfirmedPath = sanitizeConfirmedPath(currentView.state.confirmedPath, model.byId);
+  const nextConfirmedPath = [...currentConfirmedPath, selectedNodeId];
+
   return {
     parentId: selectedNodeId,
     pageIndex: 0,
-    confirmedPath: [...sanitizeConfirmedPath(state.confirmedPath, model.byId), selectedNodeId],
+    confirmedPath: nextConfirmedPath,
     history: [
       ...sanitizeHistory(state.history, model.byId),
       {
         parentId: state.parentId,
-        pageIndex: deriveCommunicationNavigationView(nodes, state).state.pageIndex,
+        pageIndex: currentView.state.pageIndex,
+        confirmedPath:
+          selectedNode.canFinish && selectedNode.hasOptionalDetails
+            ? nextConfirmedPath
+            : currentConfirmedPath,
       },
     ],
   };
@@ -124,18 +133,27 @@ export function goBackToPreviousContext(
   nodes: readonly CommunicationNode[],
   state: CommunicationNavigationState,
 ): CommunicationNavigationState {
+  const currentView = deriveCommunicationNavigationView(nodes, state);
+
+  if (currentView.state.pageIndex > 0) {
+    return {
+      ...currentView.state,
+      pageIndex: currentView.state.pageIndex - 1,
+    };
+  }
+
   const model = buildNavigationModel(nodes);
   const history = sanitizeHistory(state.history, model.byId);
   const previousContext = history.at(-1);
 
   if (previousContext === undefined) {
-    return deriveCommunicationNavigationView(nodes, state).state;
+    return currentView.state;
   }
 
   return {
     parentId: previousContext.parentId,
     pageIndex: previousContext.pageIndex,
-    confirmedPath: sanitizeConfirmedPath(state.confirmedPath, model.byId).slice(0, -1),
+    confirmedPath: previousContext.confirmedPath,
     history: history.slice(0, -1),
   };
 }
@@ -194,7 +212,10 @@ function hasValidParent(
   return node.parentId === null || byId.has(node.parentId);
 }
 
-function getChildren(model: NavigationModel, parentId: string | null): readonly CommunicationNode[] {
+function getChildren(
+  model: NavigationModel,
+  parentId: string | null,
+): readonly CommunicationNode[] {
   return model.childrenByParent.get(keyForParent(parentId)) ?? [];
 }
 
@@ -202,17 +223,25 @@ function keyForParent(parentId: string | null): string {
   return parentId ?? ROOT_KEY;
 }
 
-function sortNodesForParent(nodes: readonly CommunicationNode[], parentKey: string): CommunicationNode[] {
+function sortNodesForParent(
+  nodes: readonly CommunicationNode[],
+  parentKey: string,
+): CommunicationNode[] {
   return [...nodes].sort((left, right) => {
     if (parentKey === ROOT_KEY) {
-      const fixedHomeOrder = Number(Boolean(right.isFixedHomeOption)) - Number(Boolean(left.isFixedHomeOption));
+      const fixedHomeOrder =
+        Number(Boolean(right.isFixedHomeOption)) - Number(Boolean(left.isFixedHomeOption));
 
       if (fixedHomeOrder !== 0) {
         return fixedHomeOrder;
       }
     }
 
-    return left.position - right.position || left.label.localeCompare(right.label) || left.id.localeCompare(right.id);
+    return (
+      left.position - right.position ||
+      left.label.localeCompare(right.label) ||
+      left.id.localeCompare(right.id)
+    );
   });
 }
 
@@ -235,5 +264,11 @@ function sanitizeHistory(
   history: readonly NavigationHistoryEntry[],
   byId: ReadonlyMap<string, CommunicationNode>,
 ): readonly NavigationHistoryEntry[] {
-  return history.filter((entry) => entry.parentId === null || byId.has(entry.parentId));
+  return history
+    .filter((entry) => entry.parentId === null || byId.has(entry.parentId))
+    .map((entry) => ({
+      parentId: entry.parentId,
+      pageIndex: entry.pageIndex,
+      confirmedPath: sanitizeConfirmedPath(entry.confirmedPath, byId),
+    }));
 }

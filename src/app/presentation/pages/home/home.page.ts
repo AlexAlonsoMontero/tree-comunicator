@@ -1,7 +1,11 @@
 import { Component } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 
-import { createCommunicatorStateCoordinator, CommunicatorSnapshot } from '../../../application/communicator-state';
+import {
+  createCommunicatorStateCoordinator,
+  CommunicatorSnapshot,
+  LocalRescueOption,
+} from '../../../application/communicator-state';
 import { CommunicationNode } from '../../../domain/communication-navigation';
 
 interface CommunicationOptionView {
@@ -28,40 +32,65 @@ const PRESENTATION_SEED_TREE: readonly CommunicationNode[] = [
     parentId: null,
     label: 'Necesito algo',
     speechText: 'Necesito algo',
-    phrasePart: 'Necesito',
     position: 1,
+  }),
+  createNode({
+    id: 'want-something',
+    parentId: null,
+    label: 'Quiero algo',
+    speechText: 'Quiero algo',
+    position: 2,
+  }),
+  createNode({
+    id: 'reject',
+    parentId: null,
+    label: 'No quiero',
+    speechText: 'No quiero',
+    phrasePart: 'No quiero',
+    position: 3,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'emotions',
+    parentId: null,
+    label: 'Emociones',
+    speechText: 'Emociones',
+    position: 4,
+  }),
+  createNode({
+    id: 'people',
+    parentId: null,
+    label: 'Personas',
+    speechText: 'Personas',
+    position: 5,
+  }),
+  createNode({
+    id: 'activities',
+    parentId: null,
+    label: 'Actividades',
+    speechText: 'Actividades',
+    position: 6,
+  }),
+  createNode({
+    id: 'daily-conversation',
+    parentId: null,
+    label: 'Conversación',
+    speechText: 'Conversación cotidiana',
+    position: 7,
   }),
   createNode({
     id: 'hygiene',
     parentId: null,
     label: 'Baño e higiene',
     speechText: 'Baño e higiene',
-    phrasePart: 'Necesito higiene',
-    position: 2,
+    position: 8,
   }),
   createNode({
     id: 'help',
     parentId: null,
     label: 'Ayuda',
     speechText: 'Ayuda',
-    phrasePart: 'Necesito ayuda',
-    position: 3,
-  }),
-  createNode({
-    id: 'hungry',
-    parentId: null,
-    label: 'Tengo hambre',
-    speechText: 'Tengo hambre',
-    phrasePart: 'Tengo hambre',
-    position: 4,
-  }),
-  createNode({
-    id: 'thirsty',
-    parentId: null,
-    label: 'Tengo sed',
-    speechText: 'Tengo sed',
-    phrasePart: 'Tengo sed',
-    position: 5,
+    position: 9,
   }),
   createNode({
     id: 'pain',
@@ -70,6 +99,78 @@ const PRESENTATION_SEED_TREE: readonly CommunicationNode[] = [
     speechText: 'Me duele',
     phrasePart: 'Me duele',
     position: 0,
+  }),
+  createNode({
+    id: 'need-water',
+    parentId: 'need-something',
+    label: 'Agua',
+    speechText: 'Necesito agua',
+    phrasePart: 'Necesito agua',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'need-food',
+    parentId: 'need-something',
+    label: 'Comer',
+    speechText: 'Necesito comer',
+    phrasePart: 'Necesito comer',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'want-music',
+    parentId: 'want-something',
+    label: 'Música',
+    speechText: 'Quiero música',
+    phrasePart: 'Quiero música',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'want-outside',
+    parentId: 'want-something',
+    label: 'Salir',
+    speechText: 'Quiero salir',
+    phrasePart: 'Quiero salir',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'bathroom',
+    parentId: 'hygiene',
+    label: 'Ir al baño',
+    speechText: 'Necesito ir al baño',
+    phrasePart: 'Necesito ir al baño',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'wash-hands',
+    parentId: 'hygiene',
+    label: 'Lavarme las manos',
+    speechText: 'Necesito lavarme las manos',
+    phrasePart: 'Necesito lavarme las manos',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'help-move',
+    parentId: 'help',
+    label: 'Moverme',
+    speechText: 'Necesito ayuda para moverme',
+    phrasePart: 'Necesito ayuda para moverme',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'help-come',
+    parentId: 'help',
+    label: 'Ven aquí',
+    speechText: 'Necesito que vengas',
+    phrasePart: 'Necesito que vengas',
+    position: 1,
+    canFinish: true,
   }),
   createNode({
     id: 'dizzy',
@@ -107,20 +208,119 @@ const PRESENTATION_SEED_TREE: readonly CommunicationNode[] = [
     position: 1,
     canFinish: true,
   }),
+  createNode({
+    id: 'happy',
+    parentId: 'emotions',
+    label: 'Contento',
+    speechText: 'Me siento contento',
+    phrasePart: 'Me siento contento',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'sad',
+    parentId: 'emotions',
+    label: 'Triste',
+    speechText: 'Me siento triste',
+    phrasePart: 'Me siento triste',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'mom',
+    parentId: 'people',
+    label: 'Mamá',
+    speechText: 'Quiero ver a mamá',
+    phrasePart: 'Quiero ver a mamá',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'caregiver',
+    parentId: 'people',
+    label: 'Cuidador',
+    speechText: 'Quiero ver al cuidador',
+    phrasePart: 'Quiero ver al cuidador',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'play',
+    parentId: 'activities',
+    label: 'Jugar',
+    speechText: 'Quiero jugar',
+    phrasePart: 'Quiero jugar',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'rest',
+    parentId: 'activities',
+    label: 'Descansar',
+    speechText: 'Quiero descansar',
+    phrasePart: 'Quiero descansar',
+    position: 1,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'hello',
+    parentId: 'daily-conversation',
+    label: 'Hola',
+    speechText: 'Quiero decir hola',
+    phrasePart: 'Quiero decir hola',
+    position: 0,
+    canFinish: true,
+  }),
+  createNode({
+    id: 'thanks',
+    parentId: 'daily-conversation',
+    label: 'Gracias',
+    speechText: 'Quiero decir gracias',
+    phrasePart: 'Quiero decir gracias',
+    position: 1,
+    canFinish: true,
+  }),
 ];
 
 const OPTION_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji' | 'colorClass'>>([
   ['feeling-unwell', { emoji: '🤒', colorClass: 'option--amber' }],
   ['need-something', { emoji: '🤲', colorClass: 'option--teal' }],
+  ['want-something', { emoji: '🙋', colorClass: 'option--eggplant' }],
+  ['reject', { emoji: '✋', colorClass: 'option--burgundy' }],
+  ['emotions', { emoji: '😊', colorClass: 'option--teal' }],
+  ['people', { emoji: '👥', colorClass: 'option--eggplant' }],
+  ['activities', { emoji: '🎲', colorClass: 'option--burgundy' }],
+  ['daily-conversation', { emoji: '💬', colorClass: 'option--teal' }],
   ['hygiene', { emoji: '🚿', colorClass: 'option--eggplant' }],
   ['help', { emoji: '🫶', colorClass: 'option--burgundy' }],
-  ['hungry', { emoji: '🍽️', colorClass: 'option--teal' }],
-  ['thirsty', { emoji: '💧', colorClass: 'option--eggplant' }],
   ['pain', { emoji: '🤕', colorClass: 'option--amber' }],
+  ['need-water', { emoji: '💧', colorClass: 'option--teal' }],
+  ['need-food', { emoji: '🍽️', colorClass: 'option--eggplant' }],
+  ['want-music', { emoji: '🎵', colorClass: 'option--eggplant' }],
+  ['want-outside', { emoji: '🌳', colorClass: 'option--burgundy' }],
+  ['bathroom', { emoji: '🚽', colorClass: 'option--eggplant' }],
+  ['wash-hands', { emoji: '🧼', colorClass: 'option--teal' }],
+  ['help-move', { emoji: '🧍', colorClass: 'option--burgundy' }],
+  ['help-come', { emoji: '👋', colorClass: 'option--amber' }],
   ['dizzy', { emoji: '🌀', colorClass: 'option--teal' }],
   ['nausea', { emoji: '😟', colorClass: 'option--eggplant' }],
   ['belly', { emoji: '🫄', colorClass: 'option--amber' }],
   ['head', { emoji: '🙂', colorClass: 'option--burgundy' }],
+  ['happy', { emoji: '😊', colorClass: 'option--teal' }],
+  ['sad', { emoji: '😢', colorClass: 'option--eggplant' }],
+  ['mom', { emoji: '👩', colorClass: 'option--amber' }],
+  ['caregiver', { emoji: '🫶', colorClass: 'option--burgundy' }],
+  ['play', { emoji: '🎲', colorClass: 'option--teal' }],
+  ['rest', { emoji: '🛏️', colorClass: 'option--eggplant' }],
+  ['hello', { emoji: '👋', colorClass: 'option--amber' }],
+  ['thanks', { emoji: '🙏', colorClass: 'option--burgundy' }],
+]);
+
+const RESCUE_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji' | 'colorClass'>>([
+  ['needs-help', { emoji: '🫶', colorClass: 'option--burgundy communication-option--rescue' }],
+  ['cannot-explain', { emoji: '💬', colorClass: 'option--eggplant communication-option--rescue' }],
+  ['back', { emoji: '↩️', colorClass: 'option--teal communication-option--rescue' }],
+  ['start-over', { emoji: '🏠', colorClass: 'option--amber communication-option--rescue' }],
 ]);
 
 @Component({
@@ -139,8 +339,15 @@ export class HomePage {
   }
 
   protected get communicationOptions(): readonly CommunicationOptionView[] {
+    if (this.snapshot.isRescueModeActive) {
+      return this.snapshot.localRescueOptions.map((option) => this.#createRescueOptionView(option));
+    }
+
     return this.snapshot.navigation.visibleOptions.slice(0, 4).map((node) => {
-      const presentation = OPTION_PRESENTATION.get(node.id) ?? { emoji: '💬', colorClass: 'option--teal' };
+      const presentation = OPTION_PRESENTATION.get(node.id) ?? {
+        emoji: '💬',
+        colorClass: 'option--teal',
+      };
 
       return {
         id: node.id,
@@ -156,8 +363,20 @@ export class HomePage {
     return this.snapshot.navigation.hasMoreOptions;
   }
 
+  protected get canOpenNoOptionFallback(): boolean {
+    return this.snapshot.isNoOptionFallbackAvailable;
+  }
+
+  protected get noOptionAriaLabel(): string {
+    return this.hasMoreOptions
+      ? 'Mostrar otras opciones de comunicación'
+      : 'No encuentro mi opción; mostrar alternativas locales de rescate';
+  }
+
   protected confirmOption(optionId: string): void {
-    this.snapshot = this.#communicator.confirmNode(optionId);
+    this.snapshot = this.snapshot.isRescueModeActive
+      ? this.#communicator.chooseLocalRescueOption(optionId)
+      : this.#communicator.confirmNode(optionId);
   }
 
   protected goBack(): void {
@@ -169,11 +388,29 @@ export class HomePage {
   }
 
   protected showNextOptions(): void {
-    if (!this.hasMoreOptions) {
+    if (this.hasMoreOptions) {
+      this.snapshot = this.#communicator.nextPage();
       return;
     }
 
-    this.snapshot = this.#communicator.nextPage();
+    if (this.canOpenNoOptionFallback) {
+      this.snapshot = this.#communicator.openNoOptionFallback();
+    }
+  }
+
+  #createRescueOptionView(option: LocalRescueOption): CommunicationOptionView {
+    const presentation = RESCUE_PRESENTATION.get(option.id) ?? {
+      emoji: '💬',
+      colorClass: 'option--teal communication-option--rescue',
+    };
+
+    return {
+      id: option.id,
+      label: option.label,
+      emoji: presentation.emoji,
+      ariaLabel: `Rescate local: ${option.label}`,
+      colorClass: presentation.colorClass,
+    };
   }
 }
 

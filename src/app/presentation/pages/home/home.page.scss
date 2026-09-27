@@ -92,6 +92,10 @@
   text-align: center;
 }
 
+.communication-option--rescue {
+  border-style: dashed;
+}
+
 .control-button {
   min-height: 4.5rem;
   padding: 0.75rem 1rem;
@@ -108,6 +112,10 @@
 
 .control-button--no-option:disabled {
   border-style: dashed;
+}
+
+.control-button--no-option:not(:disabled) {
+  border-color: var(--tc-focus);
 }
 
 .communicator__assistive-text {

@@ -15,10 +15,17 @@ const rootOption = (
   extras: Partial<CommunicationNode> = {},
 ): CommunicationNode => node({ id, label, parentId: null, position, ...extras });
 
-const childOption = (id: string, parentId: string, label: string, position: number): CommunicationNode =>
-  node({ id, label, parentId, position });
+const childOption = (
+  id: string,
+  parentId: string,
+  label: string,
+  position: number,
+  extras: Partial<CommunicationNode> = {},
+): CommunicationNode => node({ id, label, parentId, position, ...extras });
 
-const node = (overrides: Partial<CommunicationNode> & Pick<CommunicationNode, 'id' | 'label'>): CommunicationNode => ({
+const node = (
+  overrides: Partial<CommunicationNode> & Pick<CommunicationNode, 'id' | 'label'>,
+): CommunicationNode => ({
   id: overrides.id,
   parentId: overrides.parentId ?? null,
   label: overrides.label,
@@ -32,7 +39,9 @@ const node = (overrides: Partial<CommunicationNode> & Pick<CommunicationNode, 'i
   ...(overrides.phrasePart === undefined ? {} : { phrasePart: overrides.phrasePart }),
   ...(overrides.pictogramPath === undefined ? {} : { pictogramPath: overrides.pictogramPath }),
   ...(overrides.colorToken === undefined ? {} : { colorToken: overrides.colorToken }),
-  ...(overrides.isFixedHomeOption === undefined ? {} : { isFixedHomeOption: overrides.isFixedHomeOption }),
+  ...(overrides.isFixedHomeOption === undefined
+    ? {}
+    : { isFixedHomeOption: overrides.isFixedHomeOption }),
 });
 
 describe('communication navigation domain rules', () => {
@@ -46,11 +55,18 @@ describe('communication navigation domain rules', () => {
     ]);
 
     expect(view.visibleOptions).toHaveLength(4);
-    expect(view.visibleOptions.map((option) => option.id)).toEqual(['pain', 'needs-help', 'drink', 'rest']);
+    expect(view.visibleOptions.map((option) => option.id)).toEqual([
+      'pain',
+      'needs-help',
+      'drink',
+      'rest',
+    ]);
     expect(view.hasMoreOptions).toBe(true);
     expect(view.showNoOptionFallback).toBe(false);
     expect(view.visibleOptions.some((option) => option.label === 'Otras opciones')).toBe(false);
-    expect(view.visibleOptions.some((option) => option.label === 'No encuentro mi opción')).toBe(false);
+    expect(view.visibleOptions.some((option) => option.label === 'No encuentro mi opción')).toBe(
+      false,
+    );
   });
 
   it('RF-010b keeps the fixed home option first at root while preserving deterministic order for the rest', () => {
@@ -61,7 +77,12 @@ describe('communication navigation domain rules', () => {
       rootOption('hello', 'Hola', 10),
     ]);
 
-    expect(view.visibleOptions.map((option) => option.id)).toEqual(['pain', 'hello', 'food', 'drink']);
+    expect(view.visibleOptions.map((option) => option.id)).toEqual([
+      'pain',
+      'hello',
+      'food',
+      'drink',
+    ]);
   });
 
   it('RF-010 derives next-page navigation from remaining siblings and then exposes local fallback', () => {
@@ -84,7 +105,9 @@ describe('communication navigation domain rules', () => {
   });
 
   it('RF-010a/RF-015 exposes No encuentro mi opción when the current level has no further alternatives', () => {
-    const view = deriveCommunicationNavigationView([rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true })]);
+    const view = deriveCommunicationNavigationView([
+      rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true }),
+    ]);
 
     expect(view.hasMoreOptions).toBe(false);
     expect(view.showNoOptionFallback).toBe(true);
@@ -126,14 +149,68 @@ describe('communication navigation domain rules', () => {
     expect(restoredView.visibleOptions.map((option) => option.id)).toEqual(['bathroom']);
   });
 
+  it('RF-006/RF-010 goes back from page N to page N-1 before leaving the parent context', () => {
+    const nodes = [
+      rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true }),
+      childOption('pain-1', 'pain', 'Uno', 0),
+      childOption('pain-2', 'pain', 'Dos', 1),
+      childOption('pain-3', 'pain', 'Tres', 2),
+      childOption('pain-4', 'pain', 'Cuatro', 3),
+      childOption('pain-5', 'pain', 'Cinco', 4),
+    ];
+    const childState = enterChildLevel(nodes, createRootNavigationState(), 'pain');
+    const secondPageState = goToNextOptionsPage(nodes, childState);
+
+    const restoredState = goBackToPreviousContext(nodes, secondPageState);
+    const restoredView = deriveCommunicationNavigationView(nodes, restoredState);
+
+    expect(restoredState.parentId).toBe('pain');
+    expect(restoredState.pageIndex).toBe(0);
+    expect(restoredState.confirmedPath).toEqual(['pain']);
+    expect(restoredView.visibleOptions.map((option) => option.id)).toEqual([
+      'pain-1',
+      'pain-2',
+      'pain-3',
+      'pain-4',
+    ]);
+  });
+
+  it('RF-011/RF-014 keeps a final optional-detail node phrase valid when returning from details', () => {
+    const nodes = [
+      rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true }),
+      childOption('belly', 'pain', 'Barriga', 0, {
+        canFinish: true,
+        hasOptionalDetails: true,
+      }),
+      childOption('strong', 'belly', 'Mucho', 0),
+    ];
+    const painState = enterChildLevel(nodes, createRootNavigationState(), 'pain');
+    const bellyState = enterChildLevel(nodes, painState, 'belly');
+
+    const restoredState = goBackToPreviousContext(nodes, bellyState);
+    const restoredView = deriveCommunicationNavigationView(nodes, restoredState);
+
+    expect(restoredState.parentId).toBe('pain');
+    expect(restoredState.confirmedPath).toEqual(['pain', 'belly']);
+    expect(restoredView.visibleOptions.map((option) => option.id)).toEqual(['belly']);
+  });
+
   it('RF-007 reset returns to root page zero and clears the confirmed path', () => {
     const state = enterChildLevel(
-      [rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true }), childOption('where', 'pain', 'Dónde', 0)],
+      [
+        rootOption('pain', 'Me encuentro mal', 0, { isFixedHomeOption: true }),
+        childOption('where', 'pain', 'Dónde', 0),
+      ],
       createRootNavigationState(),
       'pain',
     );
 
-    expect(resetNavigationToRoot()).toEqual({ parentId: null, pageIndex: 0, confirmedPath: [], history: [] });
+    expect(resetNavigationToRoot()).toEqual({
+      parentId: null,
+      pageIndex: 0,
+      confirmedPath: [],
+      history: [],
+    });
     expect(state.confirmedPath).toEqual(['pain']);
   });
 
