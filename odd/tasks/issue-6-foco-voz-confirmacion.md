@@ -1,0 +1,84 @@
+# Issue #6 — Focus, voice and long-press confirmation
+
+## Source
+
+- GitHub issue: #6 — 07. Implementar foco, voz y confirmación por pulsación mantenida
+- URL: https://github.com/AlexAlonsoMontero/tree-comunicator/issues/6
+- Branch: `feat/issue-6-foco-voz-confirmacion`
+
+## Objective
+
+Prevent accidental activations by announcing focus on a short press and confirming a focused communication option only after the configured long-press duration.
+
+## Scope
+
+- Offline text-to-speech for the essential communication flow.
+- Short press focuses and reads an option without executing its action.
+- Long press on the focused option confirms exactly once.
+- Visible, high-contrast progress while confirming.
+- Releasing before the duration cancels confirmation.
+- Focusing another option cancels the previous progress and reads the new option.
+- Focus and confirmation remain distinguishable without relying on color alone.
+
+## Related requirements
+
+- RF-003 to RF-005a
+- RA-006 to RA-008a
+- RD-003
+- RNF-001, RNF-015, RNF-016
+
+## Tasks
+
+- [x] Create a real `VoiceOutput` boundary and an offline Capacitor text-to-speech adapter without leaking framework details into application.
+- [x] Implement short-press focus/read and long-press confirmation in the communicator presentation flow, including cancellation and exactly-once execution.
+- [x] Render accessible focus, confirmation, and progress states using non-color cues and existing design tokens.
+- [x] Add unit and component tests for the acceptance criteria, including a fake voice and deterministic timer behavior.
+- [x] Run applicable formatting, lint, type, architecture, test, coverage, and build checks; record evidence and manual Android/TTS limitations.
+
+## Acceptance checklist
+
+- [x] A short press focuses and reads without navigating or executing actions.
+- [x] Holding a focused option executes its action once after the configured duration.
+- [x] Releasing early never executes the action.
+- [x] Touching another option changes focus and reads it.
+- [x] Progress is visible, contrasted, and cancellable.
+- [x] Focus and confirmation are not distinguished by color alone.
+- [ ] Essential voice works offline on a real Android device with the Android engine installed.
+
+## Constraints and non-goals
+
+- Preserve the four-option communication grid and existing navigation coordinator.
+- Keep domain/application independent from Angular, Ionic, Capacitor, and concrete infrastructure.
+- Do not send real SMS from automated tests.
+- Do not add provider-specific AI behavior or unrelated configuration flows.
+- Do not claim Android-device validation until it is actually run on a device.
+
+## Implementation
+
+- `src/app/application/voice-output.ts` defines the pure `VoiceOutput` contract.
+- `src/app/infrastructure/voice/capacitor-voice-output.ts` uses `@capacitor-community/text-to-speech@8.0.2` and selects a locally installed Spanish voice.
+- BCP-47 tags are normalized for matching while the original tag is preserved for the native call.
+- `HomePage` manages focus, an 800 ms cancellable confirmation progress, exactly-once confirmation, and non-color state cues.
+- Navigation semantics remain in the existing communicator coordinator.
+
+## Verification evidence
+
+- Commit: `f86e63d feat(issue-6): add focus voice and long-press confirmation`
+- `pnpm format:check` — passed; Browserslist warning remains.
+- `pnpm lint` — passed.
+- `pnpm typecheck` — passed.
+- `pnpm arch` — passed without violations.
+- `pnpm test:ci` — passed: 47 tests.
+- Focused voice adapter test — passed: 3 tests, including mixed-case `ES-es`.
+- `pnpm coverage` — executed: 73.59% global statements, below the project target of 80%; domain 96.96%, application 90.47%.
+- `pnpm build` — passed; existing Browserslist and Home SCSS budget warnings remain.
+- `pnpm exec cap sync android` — passed.
+- `cd android && ./gradlew assembleDebug` — passed.
+- No SMS was sent.
+
+## Remaining manual validation
+
+- Install/prepare an offline Spanish voice on Android and verify TTS in airplane mode.
+- Verify long-press progress on a real tablet with TalkBack and Switch Access.
+- If no local Spanish voice is installed, the adapter fails safely; visible voice-error feedback remains a future improvement.
+- Global coverage must reach 80% before integration if the project gate is enforced strictly.
