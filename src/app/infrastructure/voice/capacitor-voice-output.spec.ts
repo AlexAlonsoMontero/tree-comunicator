@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { speak, getSupportedVoices } = vi.hoisted(() => ({
+const { speak, getSupportedVoices, getPlatform } = vi.hoisted(() => ({
   speak: vi.fn(),
   getSupportedVoices: vi.fn(),
+  getPlatform: vi.fn(),
 }));
 
 vi.mock('@capacitor-community/text-to-speech', () => ({
   TextToSpeech: { speak, getSupportedVoices },
+}));
+
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { getPlatform },
 }));
 
 import { CapacitorVoiceOutput } from './capacitor-voice-output';
@@ -14,6 +19,7 @@ import { CapacitorVoiceOutput } from './capacitor-voice-output';
 describe('CapacitorVoiceOutput', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getPlatform.mockReturnValue('android');
   });
 
   it('RD-003 uses a locally installed Spanish voice without network fallback', async () => {
@@ -52,12 +58,27 @@ describe('CapacitorVoiceOutput', () => {
     );
   });
 
-  it('fails safely when no local Spanish voice is installed', async () => {
+  it('fails safely when no local Spanish voice is installed on native Android', async () => {
     getSupportedVoices.mockResolvedValue({ voices: [{ lang: 'es-ES', localService: false }] });
 
     await expect(new CapacitorVoiceOutput().speak('Hola')).rejects.toThrow(
       'No hay una voz española local instalada.',
     );
     expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('allows the web SpeechSynthesis implementation to speak Spanish before voices are preloaded', async () => {
+    getPlatform.mockReturnValue('web');
+
+    await new CapacitorVoiceOutput().speak('Hola');
+
+    expect(getSupportedVoices).not.toHaveBeenCalled();
+    expect(speak).toHaveBeenCalledWith({
+      text: 'Hola',
+      lang: 'es-ES',
+      rate: 0.9,
+      pitch: 1,
+      volume: 1,
+    });
   });
 });

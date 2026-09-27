@@ -456,14 +456,6 @@ export class HomePage implements OnDestroy {
     }, 500);
   }
 
-  protected optionState(optionId: string): string {
-    return this.confirmingOptionId === optionId
-      ? 'confirmada'
-      : this.focusedOptionId === optionId
-        ? 'enfocada'
-        : '';
-  }
-
   protected repeatFocused(): void {
     const option = this.communicationOptions.find(
       (candidate) => candidate.id === this.focusedOptionId,

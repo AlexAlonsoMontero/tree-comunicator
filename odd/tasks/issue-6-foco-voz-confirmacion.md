@@ -92,3 +92,11 @@ Prevent accidental activations by announcing focus on a short press and confirmi
 - A pointer release after timer-based confirmation cannot confirm again.
 - Focused checks: HomePage 22 tests passed, voice adapter 3 tests passed, and `pnpm typecheck` passed.
 - Verification warning: existing Browserslist configuration includes browser versions outside the current Angular support range.
+
+## Refinement evidence — visible state labels and web voice simulator
+
+- Visible `enfocada`/`confirmada` option text was removed; focus remains exposed with `aria-pressed` and confirmation progress with `aria-busy`.
+- Focused options now use the existing high-contrast focus token as their background with a contrasting text token, stronger scale, border, outline, and shadow cues.
+- Confirmation progress remains cancellable and visually distinct through a dashed border, stronger scale, and a non-text progress bar.
+- Native platforms still require a locally installed Spanish voice; the web platform calls the browser SpeechSynthesis path with `lang: 'es-ES'` without requiring preloaded voices.
+- Focused checks: HomePage 22 tests passed, voice adapter 4 tests passed, and `pnpm typecheck` passed.

@@ -33,6 +33,12 @@
           type="button"
           [attr.aria-label]="option.ariaLabel"
           [attr.aria-pressed]="focusedOptionId === option.id"
+          [attr.aria-busy]="
+            confirmingOptionId === option.id ||
+            (confirmationProgress > 0 && focusedOptionId === option.id)
+              ? 'true'
+              : null
+          "
           (pointerdown)="beginPress(option.id)"
           (pointerup)="endPress(option.id)"
           (pointerleave)="cancelPress()"
@@ -45,9 +51,6 @@
         >
           <span class="communication-option__pictogram" aria-hidden="true">{{ option.emoji }}</span>
           <span class="communication-option__label">{{ option.label }}</span>
-          <span class="communication-option__state" aria-live="polite">{{
-            optionState(option.id)
-          }}</span>
         </button>
       }
     </section>
