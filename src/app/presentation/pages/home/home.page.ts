@@ -347,6 +347,7 @@ export class HomePage implements OnDestroy {
   #progressTimer: ReturnType<typeof setInterval> | undefined;
   #pressStartedAt = 0;
   #pressedOptionId: string | null = null;
+  #spokenFocusedPressOptionId: string | null = null;
 
   ngOnDestroy(): void {
     this.cancelPress();
@@ -398,9 +399,23 @@ export class HomePage implements OnDestroy {
     if (option !== undefined) void this.speak(option.label);
   }
 
-  protected beginPress(optionId: string): void {
+  protected beginPress(optionId: string, event?: Event): void {
+    if ((event instanceof KeyboardEvent && event.repeat) || this.#pressedOptionId === optionId) {
+      return;
+    }
+
+    const shouldReadFocusedOption =
+      this.#pressedOptionId !== null && this.#pressedOptionId !== optionId;
+
     this.cancelPress();
     this.focusedOptionId = optionId;
+    if (shouldReadFocusedOption) {
+      const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
+      if (option !== undefined) {
+        this.#spokenFocusedPressOptionId = optionId;
+        void this.speak(option.label);
+      }
+    }
     this.#pressedOptionId = optionId;
     this.#pressStartedAt = Date.now();
     this.confirmationProgress = 0;
@@ -416,8 +431,9 @@ export class HomePage implements OnDestroy {
   protected endPress(optionId: string): void {
     if (this.#pressedOptionId !== optionId) return;
     const wasShortPress = Date.now() - this.#pressStartedAt < this.#longPressDuration;
+    const wasFocusAlreadySpoken = this.#spokenFocusedPressOptionId === optionId;
     this.cancelPress();
-    if (wasShortPress) {
+    if (wasShortPress && !wasFocusAlreadySpoken) {
       this.focusedOptionId = optionId;
       const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
       if (option !== undefined) void this.speak(option.label);
@@ -455,12 +471,13 @@ export class HomePage implements OnDestroy {
     void this.speak(option?.label ?? this.currentPhrase);
   }
 
-  private cancelPress(): void {
+  protected cancelPress(): void {
     if (this.#pressTimer !== undefined) clearTimeout(this.#pressTimer);
     if (this.#progressTimer !== undefined) clearInterval(this.#progressTimer);
     this.#pressTimer = undefined;
     this.#progressTimer = undefined;
     this.#pressedOptionId = null;
+    this.#spokenFocusedPressOptionId = null;
     this.confirmationProgress = 0;
   }
 

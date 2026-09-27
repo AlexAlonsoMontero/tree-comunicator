@@ -82,3 +82,13 @@ Prevent accidental activations by announcing focus on a short press and confirmi
 - Verify long-press progress on a real tablet with TalkBack and Switch Access.
 - If no local Spanish voice is installed, the adapter fails safely; visible voice-error feedback remains a future improvement.
 - Global coverage must reach 80% before integration if the project gate is enforced strictly.
+
+## Point 2 follow-up evidence
+
+- Focus switching cancels the previous hold, reads the newly focused option, and avoids duplicate speech.
+- `pointerleave` and `pointercancel` cancel without treating the gesture as a short press.
+- Repeated keyboard keydown events no longer reset the long-press timer.
+- The progress binding exposes the actual percentage (`0%` to `100%`) and is covered at `50%` during a hold.
+- A pointer release after timer-based confirmation cannot confirm again.
+- Focused checks: HomePage 22 tests passed, voice adapter 3 tests passed, and `pnpm typecheck` passed.
+- Verification warning: existing Browserslist configuration includes browser versions outside the current Angular support range.

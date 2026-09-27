@@ -68,6 +68,107 @@ describe('HomePage', () => {
     expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
   });
 
+  it('cancels a previous hold, focuses the new option, and reads the newly focused option', () => {
+    const firstButton = actionButton('Me encuentro mal');
+    const secondButton = actionButton('Necesito algo');
+
+    firstButton.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(300);
+    secondButton.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(firstButton.classList.contains('communication-option--confirming')).toBe(false);
+    expect(secondButton.classList.contains('communication-option--focused')).toBe(true);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Necesito algo');
+
+    vi.advanceTimersByTime(600);
+    secondButton.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows visible confirmation progress while an option is held', () => {
+    actionButton('Me encuentro mal').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(400);
+    vi.clearAllTimers();
+    fixture.changeDetectorRef.detectChanges();
+
+    const heldButton = actionButton('Me encuentro mal');
+    expect(heldButton.classList.contains('communication-option--confirming')).toBe(true);
+    expect(heldButton.style.getPropertyValue('--confirmation-progress')).toBe('50%');
+  });
+
+  it('cancels pointerleave and pointercancel without short-press speech or confirmation', () => {
+    const leaveButton = actionButton('Me encuentro mal');
+    leaveButton.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(300);
+    leaveButton.dispatchEvent(new Event('pointerleave', { bubbles: true }));
+    vi.advanceTimersByTime(600);
+    fixture.detectChanges();
+
+    expect(leaveButton.classList.contains('communication-option--confirming')).toBe(false);
+    expect(voice.speak).not.toHaveBeenCalled();
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+
+    const cancelButton = actionButton('Necesito algo');
+    cancelButton.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(300);
+    cancelButton.dispatchEvent(new Event('pointercancel', { bubbles: true }));
+    vi.advanceTimersByTime(600);
+    fixture.detectChanges();
+
+    expect(cancelButton.classList.contains('communication-option--confirming')).toBe(false);
+    expect(voice.speak).not.toHaveBeenCalled();
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+  });
+
+  it('ignores repeated keyboard keydown events so the hold timer is not reset', () => {
+    const button = actionButton('Me encuentro mal');
+
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    vi.advanceTimersByTime(500);
+    button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', repeat: true, bubbles: true }),
+    );
+    vi.advanceTimersByTime(300);
+    fixture.detectChanges();
+
+    expect(gridOptionLabels()).toEqual(['Me duele', 'Estoy mareado', 'Tengo náuseas']);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirms exactly once when pointerup follows an already fired long-press timer', () => {
+    const button = actionButton('Me encuentro mal');
+
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(800);
+    vi.advanceTimersByTime(100);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(gridOptionLabels()).toEqual(['Me duele', 'Estoy mareado', 'Tengo náuseas']);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
+  });
+
   it('renders the initial coordinator snapshot with four root options and the fallback phrase', () => {
     expect(currentPhrase()).toBe('Elegí una opción');
     expect(gridOptionLabels()).toEqual([

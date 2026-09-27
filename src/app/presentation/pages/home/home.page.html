@@ -29,17 +29,17 @@
             confirmingOptionId === option.id ||
             (confirmationProgress > 0 && focusedOptionId === option.id)
           "
-          [style.--confirmation-progress]="confirmationProgress / 100 + '%'"
+          [style.--confirmation-progress]="confirmationProgress + '%'"
           type="button"
           [attr.aria-label]="option.ariaLabel"
           [attr.aria-pressed]="focusedOptionId === option.id"
           (pointerdown)="beginPress(option.id)"
           (pointerup)="endPress(option.id)"
-          (pointerleave)="endPress(option.id)"
-          (pointercancel)="endPress(option.id)"
-          (keydown.enter)="beginPress(option.id)"
+          (pointerleave)="cancelPress()"
+          (pointercancel)="cancelPress()"
+          (keydown.enter)="beginPress(option.id, $event)"
           (keyup.enter)="endPress(option.id)"
-          (keydown.space)="beginPress(option.id)"
+          (keydown.space)="beginPress(option.id, $event)"
           (keyup.space)="endPress(option.id)"
           (contextmenu)="$event.preventDefault()"
         >
