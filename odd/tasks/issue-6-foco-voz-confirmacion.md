@@ -34,6 +34,7 @@ Prevent accidental activations by announcing focus on a short press and confirmi
 - [x] Render accessible focus, confirmation, and progress states using non-color cues and existing design tokens.
 - [x] Add unit and component tests for the acceptance criteria, including a fake voice and deterministic timer behavior.
 - [x] Run applicable formatting, lint, type, architecture, test, coverage, and build checks; record evidence and manual Android/TTS limitations.
+- [x] Add behaviorally meaningful voice resilience tests: repeat focused/fallback/derived phrase speech and safe interaction when voice output rejects. Writer and independent verifier passed `pnpm test:ci` (58 tests), `pnpm coverage`, and `pnpm format:check`. No synthetic coverage tests were added.
 
 ## Acceptance checklist
 
@@ -75,6 +76,10 @@ Prevent accidental activations by announcing focus on a short press and confirmi
 - `pnpm exec cap sync android` — passed.
 - `cd android && ./gradlew assembleDebug` — passed.
 - No SMS was sent.
+
+## Coverage follow-up
+
+Current coverage is 76.21% global statements. The template instrumentation is reported at 0% despite DOM tests, so the follow-up was limited to real controls and voice-error resilience rather than coverage gaming. The documented 80% project target remains unmet and requires an explicit broader coverage plan, not artificial tests.
 
 ## Remaining manual validation
 

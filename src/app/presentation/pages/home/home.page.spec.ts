@@ -45,6 +45,79 @@ describe('HomePage', () => {
     expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
   });
 
+  it('repeats the focused option after a short press without navigating', () => {
+    const button = actionButton('Necesito algo');
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(100);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    fixture.detectChanges();
+
+    vi.mocked(voice.speak).mockClear();
+    clickButton('Repetir');
+
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(button.classList.contains('communication-option--focused')).toBe(true);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Necesito algo');
+  });
+
+  it('repeats the visible fallback phrase when no option is focused', () => {
+    clickButton('Repetir');
+
+    expect(currentPhrase()).toBe('Elegí una opción');
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Elegí una opción');
+  });
+
+  it('repeats the derived phrase when the focused option no longer applies', () => {
+    clickButton('Me encuentro mal');
+    clickButton('Me duele');
+
+    expect(currentPhrase()).toBe('Me duele');
+    expect(gridOptionLabels()).toEqual(['Barriga', 'Cabeza']);
+
+    vi.mocked(voice.speak).mockClear();
+    clickButton('Repetir');
+
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Me duele');
+  });
+
+  it('keeps focus and confirmation navigation working when voice output rejects', async () => {
+    vi.mocked(voice.speak).mockRejectedValue(new Error('offline voice unavailable'));
+
+    const button = actionButton('Necesito algo');
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(100);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(button.classList.contains('communication-option--focused')).toBe(true);
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(voice.speak).toHaveBeenCalledWith('Necesito algo');
+
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(800);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(gridOptionLabels()).toEqual(['Agua', 'Comer']);
+    expect(currentPhrase()).toBe('Elegí una opción');
+    expect(voice.speak).toHaveBeenCalledWith('Necesito algo');
+  });
+
   it('RA-008a cancels a held press on release before threshold', () => {
     const button = actionButton('Me encuentro mal');
     button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
