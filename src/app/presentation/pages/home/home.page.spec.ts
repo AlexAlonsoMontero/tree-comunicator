@@ -1,23 +1,71 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { HomePage } from './home.page';
+import { VoiceOutput } from '../../../application/voice-output';
+import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
+import { VOICE_OUTPUT } from './home.page';
+import { vi } from 'vitest';
 
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
+  let voice: VoiceOutput;
 
   beforeEach(async () => {
+    vi.useFakeTimers();
+    voice = { speak: vi.fn().mockResolvedValue(undefined) };
     await TestBed.configureTestingModule({
       imports: [HomePage],
-    }).compileComponents();
+    })
+      .overrideComponent(HomePage, {
+        remove: { providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }] },
+        add: { providers: [{ provide: VOICE_OUTPUT, useValue: voice }] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(HomePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
+  afterEach(() => vi.useRealTimers());
+
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('RA-007/RD-003 focuses and reads on a short press without navigating', () => {
+    const button = actionButton('Me encuentro mal');
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(100);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    fixture.detectChanges();
+    expect(gridOptionLabels()[0]).toBe('Me encuentro mal');
+    expect(button.classList.contains('communication-option--focused')).toBe(true);
+    expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
+  });
+
+  it('RA-008a cancels a held press on release before threshold', () => {
+    const button = actionButton('Me encuentro mal');
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(400);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    vi.advanceTimersByTime(500);
+    fixture.detectChanges();
+    expect(gridOptionLabels()[0]).toBe('Me encuentro mal');
+    expect(button.classList.contains('communication-option--confirming')).toBe(false);
+  });
+
+  it('RA-008 confirms exactly once after the hold threshold', () => {
+    const button = actionButton('Me encuentro mal');
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    vi.advanceTimersByTime(800);
+    button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(gridOptionLabels()).toEqual(['Me duele', 'Estoy mareado', 'Tengo náuseas']);
+    expect(voice.speak).toHaveBeenCalledTimes(1);
+    expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
   });
 
   it('renders the initial coordinator snapshot with four root options and the fallback phrase', () => {
@@ -299,7 +347,14 @@ describe('HomePage', () => {
   }
 
   function clickButton(label: string): void {
-    actionButton(label).click();
+    const button = actionButton(label);
+    if (button.classList.contains('communication-option')) {
+      button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      vi.advanceTimersByTime(800);
+      button.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    } else {
+      button.click();
+    }
     fixture.detectChanges();
   }
 
