@@ -31,11 +31,12 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 ## TDD and delivery
 - TDD mode: off; source: repository check found no explicit project/session TDD configuration, consistent with prior issue work. This infrastructure integration will use focused runtime/build checks.
 - Forecast: under 400 authored changed lines, excluding generated files.
-- Delivery strategy: ask-on-risk. No commit is authorized by this request; ask before committing.
+- Delivery strategy: ask-on-risk. User explicitly authorized the work-unit commit; no push was authorized.
 
 ## Tasks
 - [x] `SQL-01` Integrate and validate the SQLite Android plugin. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and installation/build verification. Dependency, sync, debug build, typecheck, architecture check, and target discovery passed. Independent verification found no blocker.
 - [x] `SQL-02` Add a temporary, development-only diagnostic hook/helper to run the SQLite round-trip on the connected Android tablet, then remove the hook after capturing evidence. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and device build/install verification. User authorized install/launch on `HVA790ZA` (`TB330FU`). Captured successful create/write, close, reopen/read same value, final close; removed the temporary source hook/helper afterward.
+- [x] `SQL-03` Commit the SQLite Android integration work unit after explicit user authorization. Route: inline direct. Evidence: `df6a8d9` (`feat(persistence): integrate local SQLite for Android`).
 
 ## Progress
 - 2026-09-29: Feature document created after user authorized proceeding with point 1.
@@ -52,7 +53,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - `pnpm typecheck`, `pnpm arch`, `pnpm android:targets`: passed. Target: `HVA790ZA | device | TB330FU`.
 - Temporary development hook reported `TREE_COMMUNICATOR_SQLITE_SMOKE: start create/write`, `closed after write`, `reopen/read`, `success value=tree-communicator-sqlite-smoke-ok`, and `final close` in Android logcat on `HVA790ZA` (`TB330FU`). It was removed after the run; the final `HomePage` contains no smoke invocation and `src/app/infrastructure/persistence/sqlite-smoke.ts` is absent.
 - Native `gentle_review assess` was unavailable/returned unassessable. Independent verification passed `pnpm install --frozen-lockfile`, `pnpm test:ci` (58 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `cd android && ./gradlew assembleDebug`, and `git diff --check`. It also inspected the retained device log evidence; no blocker found. The verifier did not perform a fresh install/launch.
-- Active branch is `feat/issue-7-persistencia-pictogramas-copias`; no commit was created.
+- Active branch is `feat/issue-7-persistencia-pictogramas-copias`; work-unit commit `df6a8d9` (`feat(persistence): integrate local SQLite for Android`) was created after explicit user authorization.
 
 ## Next step
-Work unit 1 is complete. Continue with the next authorized issue #7 work unit (application schema/migrations) only after agreeing its scope. No commit was created; ask explicitly before committing.
+Map the existing communication model and approved persistence requirements for the next issue #7 point: initial SQLite schema and migrations. Do not start application persistence or alter presentation in that work unit.
