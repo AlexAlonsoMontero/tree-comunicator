@@ -40,7 +40,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - [x] `SQL-04` Define the initial versioned infrastructure schema/migration for the current `CommunicationNode` model and test its SQL/version. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. User confirmed node-only v1; defer settings, SMS contacts, statistics, and history tables until their models exist. Added a finite IEEE-754 range check for `position`; independent verification approved after correction. Tests inspect generated SQL but do not execute SQLite, recorded as a validation limitation. No application repositories, runtime wiring, or presentation changes.
 - [x] `SQL-05` Commit the schema/migration work unit after explicit user authorization. Route: inline direct. Evidence: `66ba250` (`feat(persistence): add node schema migration v1`).
 - [x] `SQL-06` Apply v1 during SQLite initialization and add an application port/use case plus infrastructure adapter that reads nodes and seeds the approved initial tree only when the table is empty. Route: delegated direct; multi-file write. User approved the current tree as the initial seed and a visible in-memory fallback on DB failure. Added guaranteed connection cleanup after successful creation, including when `open()` fails; independent verification approved.
-- [ ] `SQL-09` Commit SQL-06 after explicit user authorization. Route: inline direct; pending.
+- [x] `SQL-09` Commit SQL-06 after explicit user authorization. Route: inline direct. Evidence: `239e3bc` (`feat(persistence): initialize SQLite node repository`).
 - [ ] `SQL-07` Connect HomePage to asynchronously loaded repository nodes and surface the fallback warning without claiming the seed was saved; update the functional project definition with these approved policies. Route: delegated direct; multi-file UI/doc write. Keep navigation/TTS behavior unchanged.
 - [x] `SQL-08` Choose a review-chain strategy for the over-budget feature. Route: inline direct. User selected `feature-branch-chain`; tracker/child PRs are not created without separate authorization.
 
@@ -54,6 +54,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - 2026-09-29: User authorized and created the schema/migration work-unit commit `66ba250` (`feat(persistence): add node schema migration v1`).
 - 2026-09-29: User approved seeding the current tree only for an empty DB, visible in-memory fallback on SQLite errors, and `feature-branch-chain` delivery.
 - 2026-09-29: SQL-06 initially failed independent verification because `closeConnection()` was skipped after an `open()` failure. Added cleanup and regression tests; independent verification approved. No actual device install/launch was run for this work unit.
+- 2026-09-29: User authorized and created SQL-06 work-unit commit `239e3bc` (`feat(persistence): initialize SQLite node repository`).
 
 ## Evidence
 - `package.json`: `@capacitor-community/sqlite` dependency added as `^8.1.1`.
@@ -70,6 +71,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - Independent SQL-04 verification passed the same checks and approved the finite-range correction. It confirmed the test checks SQL structure and finite boundary declarations but does not execute the migration against a SQLite engine; no behavior-level SQLite constraint test was added.
 - SQL-04 implementation commit: `66ba250` (`feat(persistence): add node schema migration v1`).
 - SQL-06 writer and independent verification passed: `pnpm test:ci` (75 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `pnpm build`, `git diff --check`. Build emitted the existing `home.page.scss` budget warning. No hardware runtime check was run.
+- SQL-06 commit: `239e3bc` (`feat(persistence): initialize SQLite node repository`). Commit includes 855 insertions across implementation, focused tests, and task evidence; it is larger than the 400-line planning target, so keep the next UI slice narrow and do not combine it with additional work.
 
 ## Next work unit approved: initial SQLite schema and migrations
 
@@ -93,4 +95,4 @@ Product decisions resolved: promote the current presentation tree to the officia
 The work is forecast to add roughly 450–600 authored changed lines across DB initialization/repository and HomePage integration/tests. Current branch history is already about 400 authored lines excluding generated Gradle files. User selected `feature-branch-chain`: keep the issue branch as the integration/tracker branch and review SQL-06 and SQL-07 as dependent slices. No PRs or pushes are authorized yet.
 
 ## Next step
-Ask for explicit authorization before committing SQL-06; do not push. After that, continue with SQL-07 as a separate UI/doc slice. Do not create PRs without separate authorization.
+Continue with SQL-07 as a separate, tightly scoped UI/doc slice. No push or PR is authorized.
