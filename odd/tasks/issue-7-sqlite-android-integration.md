@@ -31,7 +31,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 ## TDD and delivery
 - TDD mode: off; source: repository check found no explicit project/session TDD configuration, consistent with prior issue work. This infrastructure integration will use focused runtime/build checks.
 - Forecast: under 400 authored changed lines, excluding generated files.
-- Delivery strategy: ask-on-risk. User authorized commits for the completed SQLite integration work unit only; ask before committing any later work unit. No push was authorized.
+- Delivery strategy: ask-on-risk. Chain strategy selected by user: `feature-branch-chain`; the issue branch is the integration/tracker branch, with SQL-06 and SQL-07 as dependent slices. Strategy selection does not authorize commits, PR creation, or push.
 
 ## Tasks
 - [x] `SQL-01` Integrate and validate the SQLite Android plugin. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and installation/build verification. Dependency, sync, debug build, typecheck, architecture check, and target discovery passed. Independent verification found no blocker.
@@ -39,6 +39,10 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - [x] `SQL-03` Commit the SQLite Android integration work unit after explicit user authorization. Route: inline direct. Evidence: `df6a8d9` (`feat(persistence): integrate local SQLite for Android`).
 - [x] `SQL-04` Define the initial versioned infrastructure schema/migration for the current `CommunicationNode` model and test its SQL/version. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. User confirmed node-only v1; defer settings, SMS contacts, statistics, and history tables until their models exist. Added a finite IEEE-754 range check for `position`; independent verification approved after correction. Tests inspect generated SQL but do not execute SQLite, recorded as a validation limitation. No application repositories, runtime wiring, or presentation changes.
 - [x] `SQL-05` Commit the schema/migration work unit after explicit user authorization. Route: inline direct. Evidence: `66ba250` (`feat(persistence): add node schema migration v1`).
+- [x] `SQL-06` Apply v1 during SQLite initialization and add an application port/use case plus infrastructure adapter that reads nodes and seeds the approved initial tree only when the table is empty. Route: delegated direct; multi-file write. User approved the current tree as the initial seed and a visible in-memory fallback on DB failure. Added guaranteed connection cleanup after successful creation, including when `open()` fails; independent verification approved.
+- [ ] `SQL-09` Commit SQL-06 after explicit user authorization. Route: inline direct; pending.
+- [ ] `SQL-07` Connect HomePage to asynchronously loaded repository nodes and surface the fallback warning without claiming the seed was saved; update the functional project definition with these approved policies. Route: delegated direct; multi-file UI/doc write. Keep navigation/TTS behavior unchanged.
+- [x] `SQL-08` Choose a review-chain strategy for the over-budget feature. Route: inline direct. User selected `feature-branch-chain`; tracker/child PRs are not created without separate authorization.
 
 ## Progress
 - 2026-09-29: Feature document created after user authorized proceeding with point 1.
@@ -48,6 +52,8 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - 2026-09-29: SQL-04 implementation initially failed independent review because `position REAL NOT NULL` did not enforce the domain's finite-number invariant. The correction added a numeric-type and IEEE-754 finite-range check.
 - 2026-09-29: Independent verification approved corrected SQL-04; all checks passed. The SQL is validated structurally in tests, not executed against a SQLite engine.
 - 2026-09-29: User authorized and created the schema/migration work-unit commit `66ba250` (`feat(persistence): add node schema migration v1`).
+- 2026-09-29: User approved seeding the current tree only for an empty DB, visible in-memory fallback on SQLite errors, and `feature-branch-chain` delivery.
+- 2026-09-29: SQL-06 initially failed independent verification because `closeConnection()` was skipped after an `open()` failure. Added cleanup and regression tests; independent verification approved. No actual device install/launch was run for this work unit.
 
 ## Evidence
 - `package.json`: `@capacitor-community/sqlite` dependency added as `^8.1.1`.
@@ -63,6 +69,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - SQL-04 writer checks passed: `pnpm test:ci` (64 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `git diff --check`.
 - Independent SQL-04 verification passed the same checks and approved the finite-range correction. It confirmed the test checks SQL structure and finite boundary declarations but does not execute the migration against a SQLite engine; no behavior-level SQLite constraint test was added.
 - SQL-04 implementation commit: `66ba250` (`feat(persistence): add node schema migration v1`).
+- SQL-06 writer and independent verification passed: `pnpm test:ci` (75 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `pnpm build`, `git diff --check`. Build emitted the existing `home.page.scss` budget warning. No hardware runtime check was run.
 
 ## Next work unit approved: initial SQLite schema and migrations
 
@@ -77,5 +84,13 @@ The user confirmed a node-only v1. Implement a versioned initial infrastructure 
 - The migration catalog has focused tests for version/order and the table's columns/constraints/indexes.
 - No future-entity tables, repository, runtime wiring, or presentation changes are introduced.
 
+## Next point discovery: initialize SQLite and load persisted nodes
+
+Read-only mapping found that `main.ts` bootstraps Angular without an app initializer; HomePage currently creates its coordinator from a presentation-local `PRESENTATION_SEED_TREE`. The v1 migration catalog is not yet applied anywhere. SQLite 8.1.1 supports registering version upgrades before `createConnection`/`open`; application persistence would need a narrow repository port and an infrastructure adapter, with no Capacitor imports in domain/application.
+
+Product decisions resolved: promote the current presentation tree to the official initial seed and insert it only when the DB is empty; if SQLite initialization/load fails, continue with the seed in memory and display a clear Spanish warning that it is not saved.
+
+The work is forecast to add roughly 450–600 authored changed lines across DB initialization/repository and HomePage integration/tests. Current branch history is already about 400 authored lines excluding generated Gradle files. User selected `feature-branch-chain`: keep the issue branch as the integration/tracker branch and review SQL-06 and SQL-07 as dependent slices. No PRs or pushes are authorized yet.
+
 ## Next step
-The node-only schema/migration work unit is complete and committed. The next technical point is applying the versioned migration during database initialization and connecting application persistence; it has not been started. Do not push.
+Ask for explicit authorization before committing SQL-06; do not push. After that, continue with SQL-07 as a separate UI/doc slice. Do not create PRs without separate authorization.
