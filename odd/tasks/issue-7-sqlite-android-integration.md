@@ -38,7 +38,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - [x] `SQL-02` Add a temporary, development-only diagnostic hook/helper to run the SQLite round-trip on the connected Android tablet, then remove the hook after capturing evidence. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and device build/install verification. User authorized install/launch on `HVA790ZA` (`TB330FU`). Captured successful create/write, close, reopen/read same value, final close; removed the temporary source hook/helper afterward.
 - [x] `SQL-03` Commit the SQLite Android integration work unit after explicit user authorization. Route: inline direct. Evidence: `df6a8d9` (`feat(persistence): integrate local SQLite for Android`).
 - [x] `SQL-04` Define the initial versioned infrastructure schema/migration for the current `CommunicationNode` model and test its SQL/version. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. User confirmed node-only v1; defer settings, SMS contacts, statistics, and history tables until their models exist. Added a finite IEEE-754 range check for `position`; independent verification approved after correction. Tests inspect generated SQL but do not execute SQLite, recorded as a validation limitation. No application repositories, runtime wiring, or presentation changes.
-- [ ] `SQL-05` Commit the schema/migration work unit after explicit user authorization. Route: inline direct; pending.
+- [x] `SQL-05` Commit the schema/migration work unit after explicit user authorization. Route: inline direct. Evidence: `66ba250` (`feat(persistence): add node schema migration v1`).
 
 ## Progress
 - 2026-09-29: Feature document created after user authorized proceeding with point 1.
@@ -46,7 +46,8 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - 2026-09-29: User authorized a temporary development-only diagnostic hook/helper and install/launch on `HVA790ZA` (`TB330FU`). The on-device SQLite round-trip succeeded, and temporary source code was removed.
 - 2026-09-29: User confirmed the next work unit should define only the current `CommunicationNode` v1 schema/migration; tables for future models are deferred.
 - 2026-09-29: SQL-04 implementation initially failed independent review because `position REAL NOT NULL` did not enforce the domain's finite-number invariant. The correction added a numeric-type and IEEE-754 finite-range check.
-- 2026-09-29: Independent verification approved corrected SQL-04; all checks passed. The SQL is validated structurally in tests, not executed against a SQLite engine. The code work is complete; commit authorization is pending.
+- 2026-09-29: Independent verification approved corrected SQL-04; all checks passed. The SQL is validated structurally in tests, not executed against a SQLite engine.
+- 2026-09-29: User authorized and created the schema/migration work-unit commit `66ba250` (`feat(persistence): add node schema migration v1`).
 
 ## Evidence
 - `package.json`: `@capacitor-community/sqlite` dependency added as `^8.1.1`.
@@ -61,6 +62,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - Active branch is `feat/issue-7-persistencia-pictogramas-copias`; work-unit commit `df6a8d9` (`feat(persistence): integrate local SQLite for Android`) was created after explicit user authorization.
 - SQL-04 writer checks passed: `pnpm test:ci` (64 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `git diff --check`.
 - Independent SQL-04 verification passed the same checks and approved the finite-range correction. It confirmed the test checks SQL structure and finite boundary declarations but does not execute the migration against a SQLite engine; no behavior-level SQLite constraint test was added.
+- SQL-04 implementation commit: `66ba250` (`feat(persistence): add node schema migration v1`).
 
 ## Next work unit approved: initial SQLite schema and migrations
 
@@ -76,4 +78,4 @@ The user confirmed a node-only v1. Implement a versioned initial infrastructure 
 - No future-entity tables, repository, runtime wiring, or presentation changes are introduced.
 
 ## Next step
-Ask for explicit authorization before committing `SQL-04`; do not push. The next technical point after this work unit would be connecting the versioned migration to database initialization/application persistence, which remains outside the current authorization.
+The node-only schema/migration work unit is complete and committed. The next technical point is applying the versioned migration during database initialization and connecting application persistence; it has not been started. Do not push.
