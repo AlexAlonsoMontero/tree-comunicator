@@ -1,4 +1,4 @@
-import { Component, inject, InjectionToken, OnDestroy } from '@angular/core';
+import { Component, inject, InjectionToken, OnDestroy, OnInit } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 
 import {
@@ -7,8 +7,10 @@ import {
   LocalRescueOption,
 } from '../../../application/communicator-state';
 import { CommunicationNode } from '../../../domain/communication-navigation';
+import { loadCommunicationNodes } from '../../../application/load-communication-nodes';
 import { VoiceOutput } from '../../../application/voice-output';
 import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
+import { COMMUNICATION_NODE_REPOSITORY } from '../../communication-node-repository.token';
 
 interface CommunicationOptionView {
   readonly id: string;
@@ -334,11 +336,18 @@ const RESCUE_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji
   imports: [IonContent],
   providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }],
 })
-export class HomePage implements OnDestroy {
-  readonly #communicator = createCommunicatorStateCoordinator(PRESENTATION_SEED_TREE);
+export class HomePage implements OnDestroy, OnInit {
+  readonly #repository = inject(COMMUNICATION_NODE_REPOSITORY);
   readonly #voice = inject(VOICE_OUTPUT);
+  #communicator: ReturnType<typeof createCommunicatorStateCoordinator> | undefined;
+  #isDestroyed = false;
 
-  protected snapshot: CommunicatorSnapshot = this.#communicator.snapshot;
+  protected snapshot: CommunicatorSnapshot | undefined;
+  protected readonly loadingMessage = 'Cargando tus opciones de comunicación…';
+  protected readonly persistenceWarningMessage =
+    'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.';
+  protected isLoading = true;
+  protected showPersistenceWarning = false;
   protected focusedOptionId: string | null = null;
   protected confirmingOptionId: string | null = null;
   protected confirmationProgress = 0;
@@ -349,15 +358,24 @@ export class HomePage implements OnDestroy {
   #pressedOptionId: string | null = null;
   #spokenFocusedPressOptionId: string | null = null;
 
+  ngOnInit(): void {
+    void this.loadInitialCommunicationNodes();
+  }
+
   ngOnDestroy(): void {
+    this.#isDestroyed = true;
     this.cancelPress();
   }
 
   protected get currentPhrase(): string {
-    return this.snapshot.currentPhrase || INITIAL_PHRASE_FALLBACK;
+    return this.snapshot?.currentPhrase || INITIAL_PHRASE_FALLBACK;
   }
 
   protected get communicationOptions(): readonly CommunicationOptionView[] {
+    if (this.isLoading || this.snapshot === undefined) {
+      return [];
+    }
+
     if (this.snapshot.isRescueModeActive) {
       return this.snapshot.localRescueOptions.map((option) => this.#createRescueOptionView(option));
     }
@@ -379,11 +397,11 @@ export class HomePage implements OnDestroy {
   }
 
   protected get hasMoreOptions(): boolean {
-    return this.snapshot.navigation.hasMoreOptions;
+    return this.snapshot?.navigation.hasMoreOptions ?? false;
   }
 
   protected get canOpenNoOptionFallback(): boolean {
-    return this.snapshot.isNoOptionFallbackAvailable;
+    return this.snapshot?.isNoOptionFallbackAvailable ?? false;
   }
 
   protected get noOptionAriaLabel(): string {
@@ -393,6 +411,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected focusOption(optionId: string): void {
+    if (!this.isReady) return;
     this.cancelPress();
     this.focusedOptionId = optionId;
     const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
@@ -400,7 +419,11 @@ export class HomePage implements OnDestroy {
   }
 
   protected beginPress(optionId: string, event?: Event): void {
-    if ((event instanceof KeyboardEvent && event.repeat) || this.#pressedOptionId === optionId) {
+    if (
+      !this.isReady ||
+      (event instanceof KeyboardEvent && event.repeat) ||
+      this.#pressedOptionId === optionId
+    ) {
       return;
     }
 
@@ -429,7 +452,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected endPress(optionId: string): void {
-    if (this.#pressedOptionId !== optionId) return;
+    if (!this.isReady || this.#pressedOptionId !== optionId) return;
     const wasShortPress = Date.now() - this.#pressStartedAt < this.#longPressDuration;
     const wasFocusAlreadySpoken = this.#spokenFocusedPressOptionId === optionId;
     this.cancelPress();
@@ -441,15 +464,17 @@ export class HomePage implements OnDestroy {
   }
 
   protected confirmOption(optionId: string): void {
-    if (this.#pressedOptionId !== optionId) return;
+    if (!this.isReady || this.#pressedOptionId !== optionId) return;
     this.cancelPress();
     this.confirmingOptionId = optionId;
     const selectedLabel = this.communicationOptions.find(
       (candidate) => candidate.id === optionId,
     )?.label;
-    this.snapshot = this.snapshot.isRescueModeActive
-      ? this.#communicator.chooseLocalRescueOption(optionId)
-      : this.#communicator.confirmNode(optionId);
+    const snapshot = this.snapshot;
+    if (snapshot === undefined) return;
+    this.snapshot = snapshot.isRescueModeActive
+      ? this.#communicator!.chooseLocalRescueOption(optionId)
+      : this.#communicator!.confirmNode(optionId);
     void this.speak(this.snapshot.currentPhrase || selectedLabel || 'Opción confirmada');
     setTimeout(() => {
       this.confirmingOptionId = null;
@@ -457,6 +482,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected repeatFocused(): void {
+    if (!this.isReady) return;
     const option = this.communicationOptions.find(
       (candidate) => candidate.id === this.focusedOptionId,
     );
@@ -482,22 +508,42 @@ export class HomePage implements OnDestroy {
   }
 
   protected goBack(): void {
-    this.snapshot = this.#communicator.goBack();
+    if (!this.isReady) return;
+    this.snapshot = this.#communicator!.goBack();
   }
 
   protected startOver(): void {
-    this.snapshot = this.#communicator.startOver();
+    if (!this.isReady) return;
+    this.snapshot = this.#communicator!.startOver();
   }
 
   protected showNextOptions(): void {
+    if (!this.isReady) return;
     if (this.hasMoreOptions) {
-      this.snapshot = this.#communicator.nextPage();
+      this.snapshot = this.#communicator!.nextPage();
       return;
     }
 
     if (this.canOpenNoOptionFallback) {
-      this.snapshot = this.#communicator.openNoOptionFallback();
+      this.snapshot = this.#communicator!.openNoOptionFallback();
     }
+  }
+
+  private get isReady(): boolean {
+    return !this.isLoading && this.#communicator !== undefined && this.snapshot !== undefined;
+  }
+
+  private async loadInitialCommunicationNodes(): Promise<void> {
+    const result = await loadCommunicationNodes(this.#repository, PRESENTATION_SEED_TREE);
+
+    if (this.#isDestroyed) {
+      return;
+    }
+
+    this.#communicator = createCommunicatorStateCoordinator(result.nodes);
+    this.snapshot = this.#communicator.snapshot;
+    this.showPersistenceWarning = result.source === 'in-memory-fallback';
+    this.isLoading = false;
   }
 
   #createRescueOptionView(option: LocalRescueOption): CommunicationOptionView {

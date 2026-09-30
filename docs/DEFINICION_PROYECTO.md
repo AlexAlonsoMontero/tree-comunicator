@@ -147,6 +147,10 @@ Al llegar a una frase válida, la aplicación la muestra y la pronuncia. El usua
 
 Cuando un nivel tenga más de cuatro alternativas, el control fijo `Otras opciones` mostrará cuatro elementos adicionales del mismo nivel sin consumir una celda de comunicación. La aplicación conservará el contexto; `Atrás` permitirá regresar al bloque anterior. Cuando ya no queden alternativas configuradas, el control pasará a `No encuentro mi opción` y ofrecerá el rescate comunicativo local o mediante IA opcional.
 
+### 6.6 Arranque y carga local
+
+Durante el arranque, la aplicación muestra un mensaje accesible en español mientras carga el árbol desde SQLite. Las opciones de comunicación y los controles permanecen no disponibles hasta que estén listos los datos persistidos o el árbol inicial en memoria. Si no se puede confirmar la persistencia local, la aplicación usa el árbol inicial para mantener la comunicación disponible y muestra una advertencia clara sin detalles técnicos; la advertencia informa que el guardado local no pudo confirmarse.
+
 ## 7. Sistema de alertas SMS
 
 ### 7.1 Primer aviso
@@ -373,15 +377,15 @@ Posterior al MVP:
 
 ## 15. Riesgos principales
 
-| Riesgo | Tratamiento inicial |
-|---|---|
-| Pulsaciones accidentales | Lectura con pulsación breve y confirmación mediante pulsación mantenida configurable |
-| Desorientación por cambios | `Me encuentro mal` fija, actualización controlada, umbral de cambio y posibilidad de bloquear categorías |
-| Fallo de SMS | Estado hablado/visual, registro del intento y reintento controlado; comprobar SIM activa |
-| Falta de Internet | Funciones principales locales y salida offline para IA |
-| Interfaz sobrecargada | Cuatro opciones, paginación y detalles opcionales |
-| Uso indebido de datos de salud | Datos locales, PIN y exportación explícita |
-| Licencia de pictogramas | Conservar autoría, procedencia y licencia de ARASAAC; separar claramente los recursos propios |
+| Riesgo                         | Tratamiento inicial                                                                                      |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Pulsaciones accidentales       | Lectura con pulsación breve y confirmación mediante pulsación mantenida configurable                     |
+| Desorientación por cambios     | `Me encuentro mal` fija, actualización controlada, umbral de cambio y posibilidad de bloquear categorías |
+| Fallo de SMS                   | Estado hablado/visual, registro del intento y reintento controlado; comprobar SIM activa                 |
+| Falta de Internet              | Funciones principales locales y salida offline para IA                                                   |
+| Interfaz sobrecargada          | Cuatro opciones, paginación y detalles opcionales                                                        |
+| Uso indebido de datos de salud | Datos locales, PIN y exportación explícita                                                               |
+| Licencia de pictogramas        | Conservar autoría, procedencia y licencia de ARASAAC; separar claramente los recursos propios            |
 
 ## 16. Criterio general de éxito
 
