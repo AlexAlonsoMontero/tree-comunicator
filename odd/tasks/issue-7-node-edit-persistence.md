@@ -45,7 +45,7 @@ SQL-06 established SQLite initialization, one-time seed, and node loading. SQL-0
 ## Tasks
 - [x] `SQL-14` Implement the application port and SQLite transactional batch-upsert operation with focused tests.
 - [x] `SQL-15` Independently verify the implementation and run the required project checks. First verification blocked on a static fake; replaced with a stateful fake and re-verified approved.
-- [ ] `SQL-16` Commit the verified work unit only after explicit user authorization.
+- [x] `SQL-16` Commit the verified work unit after explicit user authorization. Evidence: `bc485be` (`feat(persistence): add transactional node upsert API`).
 
 ## Progress
 - 2026-09-29: User selected tree-edit persistence and chose application/infrastructure API only, without editor UI.
@@ -53,7 +53,13 @@ SQL-06 established SQLite initialization, one-time seed, and node loading. SQL-0
 - 2026-09-29: Read-only exploration found an existing parent foreign key without cascade and an existing seed transaction pattern to reuse.
 - 2026-09-29: SQL-14 implemented the application port, SQLite upsert, batch ordering/validation, transaction handling, and focused tests. Initial independent verification blocked on a static fake; corrected to a stateful fake and re-verified approved.
 - 2026-09-29: Writer and independent verifier passed `pnpm test:ci` (86 tests), typecheck, arch, format, build, and diff-check. Build retains the HomePage SCSS budget warning; unsupported Browserslist entries also appear. Fake tests do not execute upsert SQL against actual SQLite. Verifier noted parent-FK enforcement and future fixed-home edit validation as non-blocking caveats.
-- 2026-09-29: Code/spec diff is 459 insertions and 8 deletions, with another 11 insertions/1 deletion in the tracked issue task document; total tracked diff is 470 insertions/9 deletions, above the 400-line planning target. This remains one focused persistence API slice; surface this review-size risk before commit.
+- 2026-09-29: Code/spec diff is 459 insertions and 8 deletions, with another 11 insertions/1 deletion in the tracked issue task document; total tracked diff was 470 insertions/9 deletions, above the 400-line planning target.
+- 2026-09-29: User authorized one local commit despite the disclosed review size. Created `bc485be` (`feat(persistence): add transactional node upsert API`), totaling 537 insertions and 9 deletions including both ODD task documents. No push/PR.
+
+## Evidence
+- Commit: `bc485be` (`feat(persistence): add transactional node upsert API`).
+- Passed: `pnpm test:ci` (86 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `pnpm build`, and `git diff --check`.
+- The persistence tests use a stateful SQLite fake; the upsert SQL has not been executed against a real SQLite engine or Android device.
 
 ## Verification plan
 - `pnpm test:ci`

@@ -48,7 +48,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - [x] `SQL-13` Define a transactional node-write contract for future editing; keep UI out of scope. User approved batch upsert: omitted nodes remain unchanged, deactivation uses `enabled: false`, no physical delete/full replacement, and the operation returns the complete persisted tree. Details tracked in `odd/tasks/issue-7-node-edit-persistence.md`.
 - [x] `SQL-14` Implement the approved transactional node upsert API and tests; see `odd/tasks/issue-7-node-edit-persistence.md`. Independent verification approved after replacing a stale fake with a stateful fake.
 - [x] `SQL-15` Independently verify SQL-14 and run project checks. Passed 86 tests, typecheck, architecture, format, build, and diff check.
-- [ ] `SQL-16` Commit SQL-14 only after explicit user authorization. The 470-line code/spec diff exceeds the 400-line planning target; disclose reviewer workload before requesting approval.
+- [x] `SQL-16` Commit SQL-14 after explicit user authorization. Evidence: `bc485be` (`feat(persistence): add transactional node upsert API`).
 - [x] `SQL-08` Choose a review-chain strategy for the over-budget feature. Route: inline direct. User selected `feature-branch-chain`; tracker/child PRs are not created without separate authorization.
 
 ## Progress
@@ -67,6 +67,7 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - 2026-09-29: User explicitly authorized the SQL-07 commit; created `30d6266` (`feat(presentation): load communication tree from SQLite`).
 - 2026-09-29: User selected persisting tree edits as the next Issue #7 area. SQL-11 read-only exploration found no editor route/page/use case. RF-023 requires create/edit/order/duplicate/deactivate and persistence; RF-020/021/022 require PIN-protected editor entry/session; RF-026 requires preview before publishing. Stable IDs/order/fixed-home fields already exist, but the repository only initializes/seeds/loads.
 - 2026-09-29: User chose an application/infrastructure persistence API only; PIN-gated editor UI remains out of scope. User approved transactional batch upsert: preserve omitted nodes, deactivate with `enabled: false`, no physical delete/full-tree replacement, return the persisted full tree. Detailed plan is in `odd/tasks/issue-7-node-edit-persistence.md`.
+- 2026-09-29: User authorized one SQL-14 local commit after the 470-line tracked candidate size and stateful-fake test limitation were disclosed. Commit `bc485be` (`feat(persistence): add transactional node upsert API`) includes 537 insertions and 9 deletions including task documents. No push or PR.
 - 2026-09-29: SQL-14 implementation initially failed independent review because its static fake did not reflect writes. Converted to a stateful fake and independent verification approved. Writer and verifier passed `pnpm test:ci` (86 tests), typecheck, arch, format, build, and diff-check. SQL is not executed against a real SQLite engine. Code/spec diff is 459 insertions/8 deletions; with 11/1 in the issue task document, total tracked diff is 470/9—above target, disclose before commit.
 
 ## Evidence
@@ -115,4 +116,4 @@ The work is forecast to add roughly 450–600 authored changed lines across DB i
 Read-only mapping found no editor route/page or application write use case. `CommunicationNodeRepository` exposes only `initializeAndLoad`; SQLite has one-time seed/load and seed transaction support. Existing schema already stores stable IDs, parent IDs, positions, enabled/locked/fixed-home metadata. Requirements: RF-023 mandates create, edit, order, duplicate, deactivate and persistence; RF-020/021/022 require PIN-gated configuration; RF-026 requires preview before publishing; RD-004 requires stable IDs; RF-010b/RF-052 preserve `Me encuentro mal` in the first home cell. Physical deletion/cascade behavior is not specified, so do not invent it.
 
 ## Next step
-SQL-14 and independent verification are complete. Ask for explicit commit authorization while disclosing the 470-line code/spec review size and that SQLite SQL was validated with a stateful fake, not an actual SQLite engine. No push or PR.
+SQL-14 is committed as `bc485be`; tests use a stateful fake and do not execute upsert SQL against real SQLite. No push or PR. Select the next Issue #7 validation or feature slice before further implementation.
