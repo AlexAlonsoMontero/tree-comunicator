@@ -36,6 +36,37 @@ const LOAD_NODES_SQL = `SELECT
 FROM communication_nodes
 ORDER BY parent_id IS NOT NULL, parent_id, position, label, id`;
 
+const UPSERT_NODE_SQL = `INSERT INTO communication_nodes (
+  id,
+  parent_id,
+  label,
+  speech_text,
+  position,
+  enabled,
+  locked_position,
+  can_finish,
+  has_optional_details,
+  action,
+  phrase_part,
+  pictogram_path,
+  color_token,
+  is_fixed_home_option
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(id) DO UPDATE SET
+  parent_id = excluded.parent_id,
+  label = excluded.label,
+  speech_text = excluded.speech_text,
+  position = excluded.position,
+  enabled = excluded.enabled,
+  locked_position = excluded.locked_position,
+  can_finish = excluded.can_finish,
+  has_optional_details = excluded.has_optional_details,
+  action = excluded.action,
+  phrase_part = excluded.phrase_part,
+  pictogram_path = excluded.pictogram_path,
+  color_token = excluded.color_token,
+  is_fixed_home_option = excluded.is_fixed_home_option`;
+
 type SQLiteClient = Pick<
   CapacitorSQLitePlugin,
   | 'addUpgradeStatement'
@@ -60,6 +91,25 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
   async initializeAndLoad(
     initialNodes: readonly CommunicationNode[],
   ): Promise<readonly CommunicationNode[]> {
+    return await this.withOpenConnection(async () => {
+      await this.seedInitialTreeWhenEmpty(initialNodes);
+      return await this.loadNodes();
+    });
+  }
+
+  async saveNodes(nodes: readonly CommunicationNode[]): Promise<readonly CommunicationNode[]> {
+    const orderedNodes = orderNodesForBatchUpsert(nodes);
+
+    return await this.withOpenConnection(async () => {
+      if (orderedNodes.length > 0) {
+        await this.saveNodesInTransaction(orderedNodes);
+      }
+
+      return await this.loadNodes();
+    });
+  }
+
+  private async withOpenConnection<T>(work: () => Promise<T>): Promise<T> {
     await this.registerMigrations();
     await this.sqlite.createConnection({
       database: this.databaseName,
@@ -69,19 +119,18 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
       readonly: false,
     });
 
-    let initializationError: unknown;
+    let operationError: unknown;
     try {
       await this.sqlite.open({ database: this.databaseName, readonly: false });
-      await this.seedInitialTreeWhenEmpty(initialNodes);
-      return await this.loadNodes();
+      return await work();
     } catch (error: unknown) {
-      initializationError = error;
+      operationError = error;
       throw error;
     } finally {
       try {
         await this.sqlite.closeConnection({ database: this.databaseName, readonly: false });
       } catch (closeError: unknown) {
-        if (initializationError === undefined) {
+        if (operationError === undefined) {
           throw closeError;
         }
       }
@@ -145,6 +194,33 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
     }
   }
 
+  private async saveNodesInTransaction(nodes: readonly CommunicationNode[]): Promise<void> {
+    let transactionActive = false;
+    try {
+      await this.sqlite.beginTransaction({ database: this.databaseName, readonly: false });
+      transactionActive = true;
+      await this.sqlite.executeSet({
+        database: this.databaseName,
+        transaction: false,
+        set: nodes.map((node) => ({
+          statement: UPSERT_NODE_SQL,
+          values: serializeNode(node),
+        })),
+      });
+      await this.sqlite.commitTransaction({ database: this.databaseName, readonly: false });
+      transactionActive = false;
+    } catch (error: unknown) {
+      if (transactionActive) {
+        try {
+          await this.sqlite.rollbackTransaction({ database: this.databaseName, readonly: false });
+        } catch {
+          /* Preserve the original batch write failure for callers. */
+        }
+      }
+      throw error;
+    }
+  }
+
   private async countNodes(): Promise<number> {
     const result = await this.sqlite.query({
       database: this.databaseName,
@@ -172,6 +248,47 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
 
     return resultRows(result).map(mapRowToNode);
   }
+}
+
+function orderNodesForBatchUpsert(
+  nodes: readonly CommunicationNode[],
+): readonly CommunicationNode[] {
+  const nodesById = new Map<string, CommunicationNode>();
+  for (const node of nodes) {
+    if (nodesById.has(node.id)) {
+      throw new Error(`Communication node batch contains duplicate id: ${node.id}.`);
+    }
+    nodesById.set(node.id, node);
+  }
+
+  const orderedNodes: CommunicationNode[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  const visit = (node: CommunicationNode): void => {
+    if (visited.has(node.id)) {
+      return;
+    }
+
+    if (visiting.has(node.id)) {
+      throw new Error(`Communication node batch contains a dependency cycle at id: ${node.id}.`);
+    }
+
+    visiting.add(node.id);
+    const batchParent = node.parentId === null ? undefined : nodesById.get(node.parentId);
+    if (batchParent !== undefined) {
+      visit(batchParent);
+    }
+    visiting.delete(node.id);
+    visited.add(node.id);
+    orderedNodes.push(node);
+  };
+
+  for (const node of nodes) {
+    visit(node);
+  }
+
+  return orderedNodes;
 }
 
 function serializeNode(node: CommunicationNode): unknown[] {

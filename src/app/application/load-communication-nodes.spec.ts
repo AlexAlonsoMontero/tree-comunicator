@@ -19,6 +19,7 @@ describe('loadCommunicationNodes', () => {
         expect(initialNodes).toBe(INITIAL_TREE);
         return PERSISTED_TREE;
       },
+      saveNodes: async () => PERSISTED_TREE,
     };
 
     await expect(loadCommunicationNodes(repository, INITIAL_TREE)).resolves.toEqual({
@@ -33,6 +34,7 @@ describe('loadCommunicationNodes', () => {
       initializeAndLoad: async () => {
         throw failure;
       },
+      saveNodes: async () => INITIAL_TREE,
     };
 
     await expect(loadCommunicationNodes(repository, INITIAL_TREE)).resolves.toEqual({

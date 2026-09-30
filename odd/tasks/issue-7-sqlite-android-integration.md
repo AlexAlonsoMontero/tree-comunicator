@@ -43,6 +43,12 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - [x] `SQL-09` Commit SQL-06 after explicit user authorization. Route: inline direct. Evidence: `239e3bc` (`feat(persistence): initialize SQLite node repository`).
 - [x] `SQL-07` Connect HomePage to asynchronously loaded repository nodes and surface the fallback warning without claiming the seed was saved; update the functional project definition with these approved policies. Route: delegated direct; multi-file UI/doc write. User chose an accessible loading message and to keep all communication interactions unavailable until persistence or fallback resolves. Independent verification approved; existing navigation/TTS/press behavior remains covered.
 - [x] `SQL-10` Commit SQL-07 after explicit user authorization. Route: inline direct. Evidence: `30d6266` (`feat(presentation): load communication tree from SQLite`).
+- [x] `SQL-11` Map existing tree editing and persistence requirements, then propose a bounded node-edit work unit. Read-only exploration found no current editor route/page/use cases; requirements mandate create/edit/order/duplicate/deactivate and PIN-gated configuration. No source changes.
+- [x] `SQL-12` Choose whether the next node-edit slice is persistence API only or includes a PIN-gated editor UI. User chose application/infrastructure persistence API only; no editor UI in this work unit.
+- [x] `SQL-13` Define a transactional node-write contract for future editing; keep UI out of scope. User approved batch upsert: omitted nodes remain unchanged, deactivation uses `enabled: false`, no physical delete/full replacement, and the operation returns the complete persisted tree. Details tracked in `odd/tasks/issue-7-node-edit-persistence.md`.
+- [x] `SQL-14` Implement the approved transactional node upsert API and tests; see `odd/tasks/issue-7-node-edit-persistence.md`. Independent verification approved after replacing a stale fake with a stateful fake.
+- [x] `SQL-15` Independently verify SQL-14 and run project checks. Passed 86 tests, typecheck, architecture, format, build, and diff check.
+- [ ] `SQL-16` Commit SQL-14 only after explicit user authorization. The 470-line code/spec diff exceeds the 400-line planning target; disclose reviewer workload before requesting approval.
 - [x] `SQL-08` Choose a review-chain strategy for the over-budget feature. Route: inline direct. User selected `feature-branch-chain`; tracker/child PRs are not created without separate authorization.
 
 ## Progress
@@ -59,6 +65,9 @@ Issue #7 needs a reliable on-device local persistence foundation. The confirmed 
 - 2026-09-29: SQL-07 exploration found that replacing the seed coordinator after user interaction could reset communication state. User chose an accessible loading message while interactions are unavailable, then display persisted nodes or in-memory fallback.
 - 2026-09-29: SQL-07 implemented composition-root SQLite binding, async HomePage loading/fallback, accessible statuses, and the functional definition update. Independent verification approved. No Android install/launch was run.
 - 2026-09-29: User explicitly authorized the SQL-07 commit; created `30d6266` (`feat(presentation): load communication tree from SQLite`).
+- 2026-09-29: User selected persisting tree edits as the next Issue #7 area. SQL-11 read-only exploration found no editor route/page/use case. RF-023 requires create/edit/order/duplicate/deactivate and persistence; RF-020/021/022 require PIN-protected editor entry/session; RF-026 requires preview before publishing. Stable IDs/order/fixed-home fields already exist, but the repository only initializes/seeds/loads.
+- 2026-09-29: User chose an application/infrastructure persistence API only; PIN-gated editor UI remains out of scope. User approved transactional batch upsert: preserve omitted nodes, deactivate with `enabled: false`, no physical delete/full-tree replacement, return the persisted full tree. Detailed plan is in `odd/tasks/issue-7-node-edit-persistence.md`.
+- 2026-09-29: SQL-14 implementation initially failed independent review because its static fake did not reflect writes. Converted to a stateful fake and independent verification approved. Writer and verifier passed `pnpm test:ci` (86 tests), typecheck, arch, format, build, and diff-check. SQL is not executed against a real SQLite engine. Code/spec diff is 459 insertions/8 deletions; with 11/1 in the issue task document, total tracked diff is 470/9—above target, disclose before commit.
 
 ## Evidence
 - `package.json`: `@capacitor-community/sqlite` dependency added as `^8.1.1`.
@@ -101,5 +110,9 @@ Product decisions resolved: promote the current presentation tree to the officia
 
 The work is forecast to add roughly 450–600 authored changed lines across DB initialization/repository and HomePage integration/tests. Current branch history is already about 400 authored lines excluding generated Gradle files. User selected `feature-branch-chain`: keep the issue branch as the integration/tracker branch and review SQL-06 and SQL-07 as dependent slices. No PRs or pushes are authorized yet.
 
+## SQL-11 exploration: tree edit persistence
+
+Read-only mapping found no editor route/page or application write use case. `CommunicationNodeRepository` exposes only `initializeAndLoad`; SQLite has one-time seed/load and seed transaction support. Existing schema already stores stable IDs, parent IDs, positions, enabled/locked/fixed-home metadata. Requirements: RF-023 mandates create, edit, order, duplicate, deactivate and persistence; RF-020/021/022 require PIN-gated configuration; RF-026 requires preview before publishing; RD-004 requires stable IDs; RF-010b/RF-052 preserve `Me encuentro mal` in the first home cell. Physical deletion/cascade behavior is not specified, so do not invent it.
+
 ## Next step
-SQL-07 is committed. Do not push or create a PR without separate authorization. Select the next Issue #7 work unit before further implementation.
+SQL-14 and independent verification are complete. Ask for explicit commit authorization while disclosing the 470-line code/spec review size and that SQLite SQL was validated with a stateful fake, not an actual SQLite engine. No push or PR.

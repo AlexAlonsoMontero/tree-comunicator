@@ -609,6 +609,7 @@ describe('HomePage', () => {
 
         return options.nodes ?? initialNodes;
       }),
+      saveNodes: vi.fn(async () => options.nodes ?? []),
     };
 
     await TestBed.configureTestingModule({
