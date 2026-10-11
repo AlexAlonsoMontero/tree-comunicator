@@ -1,4 +1,11 @@
-import { Component, inject, InjectionToken, OnDestroy } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  inject,
+  InjectionToken,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { IonContent } from '@ionic/angular';
 
 import {
@@ -7,8 +14,14 @@ import {
   LocalRescueOption,
 } from '../../../application/communicator-state';
 import { CommunicationNode } from '../../../domain/communication-navigation';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../../domain/default-pictogram-emojis';
+import {
+  loadCommunicationNodes,
+  type LoadCommunicationNodesResult,
+} from '../../../application/load-communication-nodes';
 import { VoiceOutput } from '../../../application/voice-output';
 import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
+import { COMMUNICATION_NODE_REPOSITORY } from '../../communication-node-repository.token';
 
 interface CommunicationOptionView {
   readonly id: string;
@@ -21,7 +34,6 @@ interface CommunicationOptionView {
 export const VOICE_OUTPUT = new InjectionToken<VoiceOutput>('VOICE_OUTPUT');
 
 const INITIAL_PHRASE_FALLBACK = 'Elegí una opción';
-
 const PRESENTATION_SEED_TREE: readonly CommunicationNode[] = [
   createNode({
     id: 'feeling-unwell',
@@ -286,38 +298,38 @@ const PRESENTATION_SEED_TREE: readonly CommunicationNode[] = [
   }),
 ];
 
-const OPTION_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji' | 'colorClass'>>([
-  ['feeling-unwell', { emoji: '🤒', colorClass: 'option--amber' }],
-  ['need-something', { emoji: '🤲', colorClass: 'option--teal' }],
-  ['want-something', { emoji: '🙋', colorClass: 'option--eggplant' }],
-  ['reject', { emoji: '✋', colorClass: 'option--burgundy' }],
-  ['emotions', { emoji: '😊', colorClass: 'option--teal' }],
-  ['people', { emoji: '👥', colorClass: 'option--eggplant' }],
-  ['activities', { emoji: '🎲', colorClass: 'option--burgundy' }],
-  ['daily-conversation', { emoji: '💬', colorClass: 'option--teal' }],
-  ['hygiene', { emoji: '🚿', colorClass: 'option--eggplant' }],
-  ['help', { emoji: '🫶', colorClass: 'option--burgundy' }],
-  ['pain', { emoji: '🤕', colorClass: 'option--amber' }],
-  ['need-water', { emoji: '💧', colorClass: 'option--teal' }],
-  ['need-food', { emoji: '🍽️', colorClass: 'option--eggplant' }],
-  ['want-music', { emoji: '🎵', colorClass: 'option--eggplant' }],
-  ['want-outside', { emoji: '🌳', colorClass: 'option--burgundy' }],
-  ['bathroom', { emoji: '🚽', colorClass: 'option--eggplant' }],
-  ['wash-hands', { emoji: '🧼', colorClass: 'option--teal' }],
-  ['help-move', { emoji: '🧍', colorClass: 'option--burgundy' }],
-  ['help-come', { emoji: '👋', colorClass: 'option--amber' }],
-  ['dizzy', { emoji: '🌀', colorClass: 'option--teal' }],
-  ['nausea', { emoji: '😟', colorClass: 'option--eggplant' }],
-  ['belly', { emoji: '🫄', colorClass: 'option--amber' }],
-  ['head', { emoji: '🙂', colorClass: 'option--burgundy' }],
-  ['happy', { emoji: '😊', colorClass: 'option--teal' }],
-  ['sad', { emoji: '😢', colorClass: 'option--eggplant' }],
-  ['mom', { emoji: '👩', colorClass: 'option--amber' }],
-  ['caregiver', { emoji: '🫶', colorClass: 'option--burgundy' }],
-  ['play', { emoji: '🎲', colorClass: 'option--teal' }],
-  ['rest', { emoji: '🛏️', colorClass: 'option--eggplant' }],
-  ['hello', { emoji: '👋', colorClass: 'option--amber' }],
-  ['thanks', { emoji: '🙏', colorClass: 'option--burgundy' }],
+const OPTION_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'colorClass'>>([
+  ['feeling-unwell', { colorClass: 'option--amber' }],
+  ['need-something', { colorClass: 'option--teal' }],
+  ['want-something', { colorClass: 'option--eggplant' }],
+  ['reject', { colorClass: 'option--burgundy' }],
+  ['emotions', { colorClass: 'option--teal' }],
+  ['people', { colorClass: 'option--eggplant' }],
+  ['activities', { colorClass: 'option--burgundy' }],
+  ['daily-conversation', { colorClass: 'option--teal' }],
+  ['hygiene', { colorClass: 'option--eggplant' }],
+  ['help', { colorClass: 'option--burgundy' }],
+  ['pain', { colorClass: 'option--amber' }],
+  ['need-water', { colorClass: 'option--teal' }],
+  ['need-food', { colorClass: 'option--eggplant' }],
+  ['want-music', { colorClass: 'option--eggplant' }],
+  ['want-outside', { colorClass: 'option--burgundy' }],
+  ['bathroom', { colorClass: 'option--eggplant' }],
+  ['wash-hands', { colorClass: 'option--teal' }],
+  ['help-move', { colorClass: 'option--burgundy' }],
+  ['help-come', { colorClass: 'option--amber' }],
+  ['dizzy', { colorClass: 'option--teal' }],
+  ['nausea', { colorClass: 'option--eggplant' }],
+  ['belly', { colorClass: 'option--amber' }],
+  ['head', { colorClass: 'option--burgundy' }],
+  ['happy', { colorClass: 'option--teal' }],
+  ['sad', { colorClass: 'option--eggplant' }],
+  ['mom', { colorClass: 'option--amber' }],
+  ['caregiver', { colorClass: 'option--burgundy' }],
+  ['play', { colorClass: 'option--teal' }],
+  ['rest', { colorClass: 'option--eggplant' }],
+  ['hello', { colorClass: 'option--amber' }],
+  ['thanks', { colorClass: 'option--burgundy' }],
 ]);
 
 const RESCUE_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji' | 'colorClass'>>([
@@ -334,11 +346,19 @@ const RESCUE_PRESENTATION = new Map<string, Pick<CommunicationOptionView, 'emoji
   imports: [IonContent],
   providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }],
 })
-export class HomePage implements OnDestroy {
-  readonly #communicator = createCommunicatorStateCoordinator(PRESENTATION_SEED_TREE);
+export class HomePage implements OnDestroy, OnInit {
+  readonly #repository = inject(COMMUNICATION_NODE_REPOSITORY);
   readonly #voice = inject(VOICE_OUTPUT);
+  readonly #changeDetector = inject(ChangeDetectorRef);
+  #communicator: ReturnType<typeof createCommunicatorStateCoordinator> | undefined;
+  #isDestroyed = false;
 
-  protected snapshot: CommunicatorSnapshot = this.#communicator.snapshot;
+  protected snapshot: CommunicatorSnapshot | undefined;
+  protected readonly loadingMessage = 'Cargando tus opciones de comunicación…';
+  protected readonly persistenceWarningMessage =
+    'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.';
+  protected isLoading = true;
+  protected showPersistenceWarning = false;
   protected focusedOptionId: string | null = null;
   protected confirmingOptionId: string | null = null;
   protected confirmationProgress = 0;
@@ -349,29 +369,37 @@ export class HomePage implements OnDestroy {
   #pressedOptionId: string | null = null;
   #spokenFocusedPressOptionId: string | null = null;
 
+  ngOnInit(): void {
+    void this.loadInitialCommunicationNodes();
+  }
+
   ngOnDestroy(): void {
+    this.#isDestroyed = true;
     this.cancelPress();
   }
 
   protected get currentPhrase(): string {
-    return this.snapshot.currentPhrase || INITIAL_PHRASE_FALLBACK;
+    return this.snapshot?.currentPhrase || INITIAL_PHRASE_FALLBACK;
   }
 
   protected get communicationOptions(): readonly CommunicationOptionView[] {
+    if (this.isLoading || this.snapshot === undefined) {
+      return [];
+    }
+
     if (this.snapshot.isRescueModeActive) {
       return this.snapshot.localRescueOptions.map((option) => this.#createRescueOptionView(option));
     }
 
     return this.snapshot.navigation.visibleOptions.slice(0, 4).map((node) => {
       const presentation = OPTION_PRESENTATION.get(node.id) ?? {
-        emoji: '💬',
         colorClass: 'option--teal',
       };
 
       return {
         id: node.id,
         label: node.label,
-        emoji: presentation.emoji,
+        emoji: node.pictogramEmoji ?? '💬',
         ariaLabel: `Comunicar: ${node.label}`,
         colorClass: presentation.colorClass,
       };
@@ -379,11 +407,11 @@ export class HomePage implements OnDestroy {
   }
 
   protected get hasMoreOptions(): boolean {
-    return this.snapshot.navigation.hasMoreOptions;
+    return this.snapshot?.navigation.hasMoreOptions ?? false;
   }
 
   protected get canOpenNoOptionFallback(): boolean {
-    return this.snapshot.isNoOptionFallbackAvailable;
+    return this.snapshot?.isNoOptionFallbackAvailable ?? false;
   }
 
   protected get noOptionAriaLabel(): string {
@@ -393,6 +421,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected focusOption(optionId: string): void {
+    if (!this.isReady) return;
     this.cancelPress();
     this.focusedOptionId = optionId;
     const option = this.communicationOptions.find((candidate) => candidate.id === optionId);
@@ -400,7 +429,11 @@ export class HomePage implements OnDestroy {
   }
 
   protected beginPress(optionId: string, event?: Event): void {
-    if ((event instanceof KeyboardEvent && event.repeat) || this.#pressedOptionId === optionId) {
+    if (
+      !this.isReady ||
+      (event instanceof KeyboardEvent && event.repeat) ||
+      this.#pressedOptionId === optionId
+    ) {
       return;
     }
 
@@ -429,7 +462,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected endPress(optionId: string): void {
-    if (this.#pressedOptionId !== optionId) return;
+    if (!this.isReady || this.#pressedOptionId !== optionId) return;
     const wasShortPress = Date.now() - this.#pressStartedAt < this.#longPressDuration;
     const wasFocusAlreadySpoken = this.#spokenFocusedPressOptionId === optionId;
     this.cancelPress();
@@ -441,15 +474,17 @@ export class HomePage implements OnDestroy {
   }
 
   protected confirmOption(optionId: string): void {
-    if (this.#pressedOptionId !== optionId) return;
+    if (!this.isReady || this.#pressedOptionId !== optionId) return;
     this.cancelPress();
     this.confirmingOptionId = optionId;
     const selectedLabel = this.communicationOptions.find(
       (candidate) => candidate.id === optionId,
     )?.label;
-    this.snapshot = this.snapshot.isRescueModeActive
-      ? this.#communicator.chooseLocalRescueOption(optionId)
-      : this.#communicator.confirmNode(optionId);
+    const snapshot = this.snapshot;
+    if (snapshot === undefined) return;
+    this.snapshot = snapshot.isRescueModeActive
+      ? this.#communicator!.chooseLocalRescueOption(optionId)
+      : this.#communicator!.confirmNode(optionId);
     void this.speak(this.snapshot.currentPhrase || selectedLabel || 'Opción confirmada');
     setTimeout(() => {
       this.confirmingOptionId = null;
@@ -457,6 +492,7 @@ export class HomePage implements OnDestroy {
   }
 
   protected repeatFocused(): void {
+    if (!this.isReady) return;
     const option = this.communicationOptions.find(
       (candidate) => candidate.id === this.focusedOptionId,
     );
@@ -482,22 +518,57 @@ export class HomePage implements OnDestroy {
   }
 
   protected goBack(): void {
-    this.snapshot = this.#communicator.goBack();
+    if (!this.isReady) return;
+    this.snapshot = this.#communicator!.goBack();
   }
 
   protected startOver(): void {
-    this.snapshot = this.#communicator.startOver();
+    if (!this.isReady) return;
+    this.snapshot = this.#communicator!.startOver();
   }
 
   protected showNextOptions(): void {
+    if (!this.isReady) return;
     if (this.hasMoreOptions) {
-      this.snapshot = this.#communicator.nextPage();
+      this.snapshot = this.#communicator!.nextPage();
       return;
     }
 
     if (this.canOpenNoOptionFallback) {
-      this.snapshot = this.#communicator.openNoOptionFallback();
+      this.snapshot = this.#communicator!.openNoOptionFallback();
     }
+  }
+
+  private get isReady(): boolean {
+    return !this.isLoading && this.#communicator !== undefined && this.snapshot !== undefined;
+  }
+
+  private async loadInitialCommunicationNodes(): Promise<void> {
+    try {
+      const result = await loadCommunicationNodes(this.#repository, PRESENTATION_SEED_TREE);
+      this.#applyInitialCommunicationNodes(result);
+    } catch (error: unknown) {
+      this.#applyInitialCommunicationNodes({
+        nodes: PRESENTATION_SEED_TREE,
+        source: 'in-memory-fallback',
+        error,
+      });
+    } finally {
+      if (!this.#isDestroyed) {
+        this.isLoading = false;
+        this.#changeDetector.markForCheck();
+      }
+    }
+  }
+
+  #applyInitialCommunicationNodes(result: LoadCommunicationNodesResult): void {
+    if (this.#isDestroyed) {
+      return;
+    }
+
+    this.#communicator = createCommunicatorStateCoordinator(result.nodes);
+    this.snapshot = this.#communicator.snapshot;
+    this.showPersistenceWarning = result.source === 'in-memory-fallback';
   }
 
   #createRescueOptionView(option: LocalRescueOption): CommunicationOptionView {
@@ -520,12 +591,17 @@ function createNode(
   node: Pick<CommunicationNode, 'id' | 'parentId' | 'label' | 'speechText' | 'position'> &
     Partial<CommunicationNode>,
 ): CommunicationNode {
+  const defaultPictogramEmoji = DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID[node.id];
+  const pictogramEmoji =
+    defaultPictogramEmoji === undefined ? {} : { pictogramEmoji: defaultPictogramEmoji };
+
   return {
     enabled: true,
     lockedPosition: false,
     canFinish: false,
     hasOptionalDetails: false,
     action: 'none',
+    ...pictogramEmoji,
     ...node,
   };
 }

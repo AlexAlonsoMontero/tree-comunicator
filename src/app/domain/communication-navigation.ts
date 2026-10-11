@@ -13,6 +13,7 @@ export interface CommunicationNode {
   readonly action: CommunicationNodeAction;
   readonly phrasePart?: string;
   readonly pictogramPath?: string;
+  readonly pictogramEmoji?: string;
   readonly colorToken?: string;
   readonly isFixedHomeOption?: boolean;
 }

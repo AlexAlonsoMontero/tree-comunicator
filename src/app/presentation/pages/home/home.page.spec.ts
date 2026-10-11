@@ -1,37 +1,159 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { HomePage } from './home.page';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../../domain/default-pictogram-emojis';
 import { VoiceOutput } from '../../../application/voice-output';
 import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
 import { VOICE_OUTPUT } from './home.page';
+import { COMMUNICATION_NODE_REPOSITORY } from '../../communication-node-repository.token';
+import type { CommunicationNodeRepository } from '../../../application/communication-node-repository';
+import type { CommunicationNode } from '../../../domain/communication-navigation';
 import { vi } from 'vitest';
+
+const UNKNOWN_NODE_PICTOGRAM_FALLBACK = '💬';
 
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
   let voice: VoiceOutput;
+  let repository: CommunicationNodeRepository;
 
   beforeEach(async () => {
     vi.useFakeTimers();
-    voice = { speak: vi.fn().mockResolvedValue(undefined) };
-    await TestBed.configureTestingModule({
-      imports: [HomePage],
-    })
-      .overrideComponent(HomePage, {
-        remove: { providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }] },
-        add: { providers: [{ provide: VOICE_OUTPUT, useValue: voice }] },
-      })
-      .compileComponents();
-
-    fixture = TestBed.createComponent(HomePage);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    await configureHomePageTestBed({ resolveStartup: true });
   });
 
   afterEach(() => vi.useRealTimers());
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('shows an accessible startup loading message without interactive controls', async () => {
+    await configureHomePageTestBed({ resolveStartup: false });
+
+    expect(textContent('.communicator__status')).toBe('Cargando tus opciones de comunicación…');
+    expect(nativeElement().querySelector('.communicator__status')?.getAttribute('role')).toBe(
+      'status',
+    );
+    expect(gridOptionLabels()).toEqual([]);
+    expect(actionButton('Atrás').disabled).toBe(true);
+    expect(actionButton('Repetir').disabled).toBe(true);
+    expect(actionButton('Configuración').disabled).toBe(true);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('renders persisted communication nodes after startup resolves', async () => {
+    const persistedNodes = [
+      createTestNode({
+        id: 'feeling-unwell',
+        label: 'Me encuentro mal',
+        speechText: 'Me encuentro mal',
+        pictogramEmoji: DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell']!,
+        position: 0,
+        isFixedHomeOption: true,
+      }),
+      createTestNode({
+        id: 'custom-water',
+        label: 'Agua guardada',
+        speechText: 'Agua guardada',
+        position: 1,
+      }),
+    ];
+    await configureHomePageTestBed({ resolveStartup: true, nodes: persistedNodes });
+
+    expect(gridOptionLabels()).toEqual(['Me encuentro mal', 'Agua guardada']);
+    expect(gridOptionEmojis()).toEqual([
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell'],
+      UNKNOWN_NODE_PICTOGRAM_FALLBACK,
+    ]);
+    expect(textContent('.communicator__warning')).toBe('');
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('uses the in-memory fallback and warns outside the grid without speaking when persistence fails', async () => {
+    await configureHomePageTestBed({ resolveStartup: true, rejectStartup: true });
+
+    const warning = nativeElement().querySelector('.communicator__warning');
+    const grid = nativeElement().querySelector('.communication-grid');
+
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(warning?.textContent?.trim()).toBe(
+      'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
+    );
+    expect(warning?.closest('.communication-grid')).not.toBe(grid);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('exits startup loading with seed options and a warning when persistence never settles', async () => {
+    await configureHomePageTestBed({ resolveStartup: false, keepFakeTimersDuringStartup: true });
+    fixture.autoDetectChanges();
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(1);
+    await flushMicrotasks();
+
+    expect(textContent('.communicator__status')).toBe('');
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(textContent('.communicator__warning')).toBe(
+      'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
+    );
+    expect(actionButton('Me encuentro mal').disabled).toBe(false);
+    expect(actionButton('Repetir').disabled).toBe(false);
+    expect(actionButton('Otras opciones').disabled).toBe(false);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('uses the in-memory fallback and exits loading when startup throws synchronously', async () => {
+    await configureHomePageTestBed({ resolveStartup: true, throwStartupSynchronously: true });
+
+    expect(textContent('.communicator__status')).toBe('');
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(textContent('.communicator__warning')).toBe(
+      'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
+    );
+    expect(actionButton('Me encuentro mal').disabled).toBe(false);
+    expect(actionButton('Repetir').disabled).toBe(false);
+    expect(actionButton('Otras opciones').disabled).toBe(false);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('does not apply a late startup result after the page is destroyed', async () => {
+    const startup = deferred<readonly CommunicationNode[]>();
+    await configureHomePageTestBed({ resolveStartup: false, startup });
+    vi.advanceTimersByTime(0);
+    await Promise.resolve();
+
+    fixture.destroy();
+    startup.resolve([
+      createTestNode({
+        id: 'late-node',
+        label: 'Resultado tardío',
+        speechText: 'Resultado tardío',
+        position: 0,
+      }),
+    ]);
+    await flushStartup();
+
+    expect(gridOptionLabels()).toEqual([]);
+    expect(textContent('.communicator__warning')).toBe('');
+    expect(voice.speak).not.toHaveBeenCalled();
   });
 
   it('RA-007/RD-003 focuses and reads on a short press without navigating', () => {
@@ -242,13 +364,19 @@ describe('HomePage', () => {
     expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
   });
 
-  it('renders the initial coordinator snapshot with four root options and the fallback phrase', () => {
+  it('renders the initial coordinator snapshot with four root options, seed pictograms, and the fallback phrase', () => {
     expect(currentPhrase()).toBe('Elegí una opción');
     expect(gridOptionLabels()).toEqual([
       'Me encuentro mal',
       'Necesito algo',
       'Quiero algo',
       'No quiero',
+    ]);
+    expect(gridOptionEmojis()).toEqual([
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['need-something'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['want-something'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['reject'],
     ]);
     expect(actionButton('Otras opciones').disabled).toBe(false);
   });
@@ -508,6 +636,123 @@ describe('HomePage', () => {
     expect(actionButton('Otras opciones').disabled).toBe(false);
   });
 
+  interface ConfigureHomePageOptions {
+    readonly resolveStartup: boolean;
+    readonly rejectStartup?: boolean;
+    readonly nodes?: readonly CommunicationNode[];
+    readonly startup?: Deferred<readonly CommunicationNode[]>;
+    readonly keepFakeTimersDuringStartup?: boolean;
+    readonly throwStartupSynchronously?: boolean;
+  }
+
+  interface Deferred<T> {
+    readonly promise: Promise<T>;
+    readonly resolve: (value: T) => void;
+    readonly reject: (reason?: unknown) => void;
+  }
+
+  async function configureHomePageTestBed(options: ConfigureHomePageOptions): Promise<void> {
+    fixture?.destroy();
+    TestBed.resetTestingModule();
+    if (options.keepFakeTimersDuringStartup !== true) {
+      vi.useRealTimers();
+    }
+    voice = { speak: vi.fn().mockResolvedValue(undefined) };
+    const startup = options.startup ?? deferred<readonly CommunicationNode[]>();
+    repository = {
+      initializeAndLoad: vi.fn((initialNodes: readonly CommunicationNode[]) => {
+        if (options.throwStartupSynchronously === true) {
+          throw new Error('persistence startup failed synchronously');
+        }
+
+        return loadStartupNodes(initialNodes, options, startup);
+      }),
+      saveNodes: vi.fn(async () => options.nodes ?? []),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [HomePage],
+      providers: [{ provide: COMMUNICATION_NODE_REPOSITORY, useValue: repository }],
+    })
+      .overrideComponent(HomePage, {
+        remove: { providers: [{ provide: VOICE_OUTPUT, useClass: CapacitorVoiceOutput }] },
+        add: { providers: [{ provide: VOICE_OUTPUT, useValue: voice }] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(HomePage);
+    component = fixture.componentInstance;
+    fixture.detectChanges(false);
+
+    if (options.resolveStartup) {
+      await flushStartup();
+    }
+
+    if (options.keepFakeTimersDuringStartup !== true) {
+      vi.useFakeTimers();
+    }
+  }
+
+  async function flushStartup(): Promise<void> {
+    await fixture.whenStable();
+    await flushMicrotasks();
+    if (!fixture.componentRef.hostView.destroyed) {
+      fixture.changeDetectorRef.detectChanges();
+    }
+  }
+
+  async function loadStartupNodes(
+    initialNodes: readonly CommunicationNode[],
+    options: ConfigureHomePageOptions,
+    startup: Deferred<readonly CommunicationNode[]>,
+  ): Promise<readonly CommunicationNode[]> {
+    if (!options.resolveStartup) {
+      return await startup.promise;
+    }
+
+    if (options.rejectStartup === true) {
+      throw new Error('persistence unavailable');
+    }
+
+    return options.nodes ?? initialNodes;
+  }
+
+  async function flushMicrotasks(): Promise<void> {
+    for (let pendingMicrotask = 0; pendingMicrotask < 5; pendingMicrotask += 1) {
+      await Promise.resolve();
+    }
+  }
+
+  function deferred<T>(): Deferred<T> {
+    let resolve: ((value: T) => void) | undefined;
+    let reject: ((reason?: unknown) => void) | undefined;
+    const promise = new Promise<T>((promiseResolve, promiseReject) => {
+      resolve = promiseResolve;
+      reject = promiseReject;
+    });
+
+    if (resolve === undefined || reject === undefined) {
+      throw new Error('Deferred promise callbacks were not initialized.');
+    }
+
+    return { promise, resolve, reject };
+  }
+
+  function createTestNode(
+    node: Pick<CommunicationNode, 'id' | 'label' | 'speechText' | 'position'> &
+      Partial<CommunicationNode>,
+  ): CommunicationNode {
+    return {
+      parentId: null,
+      enabled: true,
+      lockedPosition: false,
+      canFinish: false,
+      hasOptionalDetails: false,
+      action: 'none',
+      ...node,
+    };
+  }
+
   function openRescueMode(): void {
     clickButton('Otras opciones');
     clickButton('Otras opciones');
@@ -538,6 +783,12 @@ describe('HomePage', () => {
 
   function gridOptionLabels(): string[] {
     return Array.from(nativeElement().querySelectorAll('.communication-option__label')).map(
+      (element) => element.textContent?.trim() ?? '',
+    );
+  }
+
+  function gridOptionEmojis(): string[] {
+    return Array.from(nativeElement().querySelectorAll('.communication-option__pictogram')).map(
       (element) => element.textContent?.trim() ?? '',
     );
   }

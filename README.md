@@ -8,7 +8,7 @@ La aplicación permitirá construir mensajes mediante un árbol de opciones con 
 
 ## Estado
 
-Proyecto en fase de definición y análisis de requisitos. Todavía no existe una implementación funcional.
+Proyecto en fase de definición y análisis de requisitos, con una base inicial de interfaz y persistencia local. La representación persistida inicial de pictogramas usa emojis Unicode guardados como datos del nodo; se muestran sin conexión y no dependen de un catálogo externo. La integración completa de pictogramas ARASAAC, sus metadatos de autoría/licencia y la importación de imágenes propias quedan diferidas a una fase posterior.
 
 ## Funcionamiento previsto
 
@@ -92,8 +92,8 @@ La IA no diagnosticará, no enviará SMS por sí sola y no modificará el árbol
 - Ionic Angular y TypeScript para la interfaz
 - Capacitor para integración con Android
 - SQLite local mediante `@capacitor-community/sqlite` 8.x para árbol, configuración, estadísticas e historial
-- `@capacitor/filesystem` para pictogramas, imágenes propias copiadas al almacenamiento privado y copias de seguridad locales
-- `@capacitor/camera` para importar imágenes de la galería; la captura con cámara será opcional
+- `@capacitor/filesystem` para la futura gestión de pictogramas descargados, imágenes propias copiadas al almacenamiento privado y copias de seguridad locales
+- `@capacitor/camera` para la futura importación de imágenes de la galería; la captura con cámara será opcional
 - Motor Text-to-Speech offline mediante `@capacitor-community/text-to-speech` 8.x
 - Plugin Capacitor propio en Kotlin para el envío y seguimiento de SMS mediante las APIs Android
 - Plugin Capacitor propio en Kotlin con Android Keystore para la futura clave de API de IA
@@ -147,4 +147,4 @@ pnpm build
 
 ## Licencias de pictogramas
 
-ARASAAC será el catálogo principal de pictogramas. Los recursos utilizados se descargarán al dispositivo y conservarán su autoría, procedencia y licencia CC BY-NC-SA. El cuidador también podrá añadir fotografías o pictogramas propios, que quedarán asociados exclusivamente al perfil local.
+La representación inicial persistida de pictogramas usa emojis Unicode guardados como datos de cada nodo, por lo que se renderizan sin conexión sin descargar recursos gráficos. ARASAAC sigue siendo el catálogo principal previsto para una fase posterior: sus recursos deberán descargarse al dispositivo y conservar autoría, procedencia y licencia CC BY-NC-SA. El cuidador también podrá añadir fotografías o pictogramas propios en una fase posterior, copiándolos al almacenamiento privado y asociándolos exclusivamente al perfil local.

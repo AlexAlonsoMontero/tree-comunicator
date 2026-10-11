@@ -1,0 +1,133 @@
+# Issue #7, work unit 1: SQLite Android integration
+
+## Objective
+Integrate the approved `@capacitor-community/sqlite` 8.x plugin and establish that a local database can be created, closed, reopened, and read on Android.
+
+## Problem and rationale
+Issue #7 needs a reliable on-device local persistence foundation. The confirmed stack already selects SQLite through Capacitor; this work unit validates that native integration before defining the application's persisted domain schema.
+
+## Scope
+- Add and lock the compatible SQLite plugin dependency.
+- Synchronize the Capacitor Android project and make the Android build include the plugin.
+- Add the smallest suitable smoke-test mechanism needed to verify local database create/close/reopen/read on an Android device or emulator.
+
+## Non-goals
+- Application database schema, domain/application persistence contracts, or migrations.
+- Persisting the communication tree or moving the seed out of `HomePage`.
+- Pictogram storage/import, backups, or user-facing database UI.
+
+## Constraints
+- SQLite data stays on-device in app-private storage; no remote database or network dependency.
+- Preserve the existing hexagonal boundary: domain/application must not import Capacitor or SQLite.
+- Keep the dependency on the documented Capacitor-compatible 8.x line.
+- Preserve unrelated existing work and report unavailable Android runtime validation honestly.
+
+## Acceptance criteria
+- [x] `@capacitor-community/sqlite` is added on a compatible 8.x version and the pnpm lockfile is consistent.
+- [x] Capacitor Android sync registers/includes the plugin and the Android debug build succeeds.
+- [x] An Android device/emulator smoke check creates a local database, writes a value, closes/reopens the connection, and reads the same value.
+- [x] No application schema or communication-tree persistence is introduced in this work unit.
+
+## TDD and delivery
+- TDD mode: off; source: repository check found no explicit project/session TDD configuration, consistent with prior issue work. This infrastructure integration will use focused runtime/build checks.
+- Forecast: under 400 authored changed lines, excluding generated files.
+- Delivery strategy: ask-on-risk. Chain strategy selected by user: `feature-branch-chain`; the issue branch is the integration/tracker branch, with SQL-06 and SQL-07 as dependent slices. Strategy selection does not authorize commits, PR creation, or push.
+
+## Tasks
+- [x] `SQL-01` Integrate and validate the SQLite Android plugin. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and installation/build verification. Dependency, sync, debug build, typecheck, architecture check, and target discovery passed. Independent verification found no blocker.
+- [x] `SQL-02` Add a temporary, development-only diagnostic hook/helper to run the SQLite round-trip on the connected Android tablet, then remove the hook after capturing evidence. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write and device build/install verification. User authorized install/launch on `HVA790ZA` (`TB330FU`). Captured successful create/write, close, reopen/read same value, final close; removed the temporary source hook/helper afterward.
+- [x] `SQL-03` Commit the SQLite Android integration work unit after explicit user authorization. Route: inline direct. Evidence: `df6a8d9` (`feat(persistence): integrate local SQLite for Android`).
+- [x] `SQL-04` Define the initial versioned infrastructure schema/migration for the current `CommunicationNode` model and test its SQL/version. Route: delegated direct (`gentle-ai-worker`); trigger: multi-file write. User confirmed node-only v1; defer settings, SMS contacts, statistics, and history tables until their models exist. Added a finite IEEE-754 range check for `position`; independent verification approved after correction. Tests inspect generated SQL but do not execute SQLite, recorded as a validation limitation. No application repositories, runtime wiring, or presentation changes.
+- [x] `SQL-05` Commit the schema/migration work unit after explicit user authorization. Route: inline direct. Evidence: `66ba250` (`feat(persistence): add node schema migration v1`).
+- [x] `SQL-06` Apply v1 during SQLite initialization and add an application port/use case plus infrastructure adapter that reads nodes and seeds the approved initial tree only when the table is empty. Route: delegated direct; multi-file write. User approved the current tree as the initial seed and a visible in-memory fallback on DB failure. Added guaranteed connection cleanup after successful creation, including when `open()` fails; independent verification approved.
+- [x] `SQL-09` Commit SQL-06 after explicit user authorization. Route: inline direct. Evidence: `239e3bc` (`feat(persistence): initialize SQLite node repository`).
+- [x] `SQL-07` Connect HomePage to asynchronously loaded repository nodes and surface the fallback warning without claiming the seed was saved; update the functional project definition with these approved policies. Route: delegated direct; multi-file UI/doc write. User chose an accessible loading message and to keep all communication interactions unavailable until persistence or fallback resolves. Independent verification approved; existing navigation/TTS/press behavior remains covered.
+- [x] `SQL-10` Commit SQL-07 after explicit user authorization. Route: inline direct. Evidence: `30d6266` (`feat(presentation): load communication tree from SQLite`).
+- [x] `SQL-11` Map existing tree editing and persistence requirements, then propose a bounded node-edit work unit. Read-only exploration found no current editor route/page/use cases; requirements mandate create/edit/order/duplicate/deactivate and PIN-gated configuration. No source changes.
+- [x] `SQL-12` Choose whether the next node-edit slice is persistence API only or includes a PIN-gated editor UI. User chose application/infrastructure persistence API only; no editor UI in this work unit.
+- [x] `SQL-13` Define a transactional node-write contract for future editing; keep UI out of scope. User approved batch upsert: omitted nodes remain unchanged, deactivation uses `enabled: false`, no physical delete/full replacement, and the operation returns the complete persisted tree. Details tracked in `odd/tasks/issue-7-node-edit-persistence.md`.
+- [x] `SQL-14` Implement the approved transactional node upsert API and tests; see `odd/tasks/issue-7-node-edit-persistence.md`. Independent verification approved after replacing a stale fake with a stateful fake.
+- [x] `SQL-15` Independently verify SQL-14 and run project checks. Passed 86 tests, typecheck, architecture, format, build, and diff check.
+- [x] `SQL-16` Commit SQL-14 after explicit user authorization. Evidence: `bc485be` (`feat(persistence): add transactional node upsert API`).
+- [x] `SQL-17` Plan a real-SQLite upsert smoke test on the Android tablet. Use a unique disposable DB; never touch `tree-communicator`. Install/launch authorization remains a separate gate. Plan: `odd/tasks/issue-7-sqlite-upsert-validation.md`.
+- [x] `SQL-17A` Prepare a temporary smoke helper/hook and pre-install checks; no install/launch yet. Checks passed and target `HVA790ZA` / `TB330FU` is online.
+- [x] `SQL-17B` Execute the single authorized tablet run and capture logs. Seed, upsert readback, and rollback succeeded; the run ended with cleanup failure.
+- [x] `SQL-17C` Delete exact SQL-17 temp DB, remove hook/helper, and verify cleanup. One cleanup-only launch reported `deletedDatabaseCount=1; remainingDatabaseCount=0`; source/assets are marker-free and post-cleanup checks passed.
+- [x] `SQL-17D` Record on-device upsert/readback/rollback and cleanup evidence in `odd/tasks/issue-7-sqlite-upsert-validation.md`. No source commit authorized; evidence commit remains separate.
+- [x] `SQL-08` Choose a review-chain strategy for the over-budget feature. Route: inline direct. User selected `feature-branch-chain`; tracker/child PRs are not created without separate authorization.
+
+## Progress
+- 2026-09-29: Feature document created after user authorized proceeding with point 1.
+- 2026-09-29: SQLite 8.1.1 dependency added and Capacitor Android sync/debug build/typecheck/architecture check passed. Target discovery found connected Android tablet `HVA790ZA` (`TB330FU`). The device create/close/reopen/read smoke has not run yet.
+- 2026-09-29: User authorized a temporary development-only diagnostic hook/helper and install/launch on `HVA790ZA` (`TB330FU`). The on-device SQLite round-trip succeeded, and temporary source code was removed.
+- 2026-09-29: User confirmed the next work unit should define only the current `CommunicationNode` v1 schema/migration; tables for future models are deferred.
+- 2026-09-29: SQL-04 implementation initially failed independent review because `position REAL NOT NULL` did not enforce the domain's finite-number invariant. The correction added a numeric-type and IEEE-754 finite-range check.
+- 2026-09-29: Independent verification approved corrected SQL-04; all checks passed. The SQL is validated structurally in tests, not executed against a SQLite engine.
+- 2026-09-29: User authorized and created the schema/migration work-unit commit `66ba250` (`feat(persistence): add node schema migration v1`).
+- 2026-09-29: User approved seeding the current tree only for an empty DB, visible in-memory fallback on SQLite errors, and `feature-branch-chain` delivery.
+- 2026-09-29: SQL-06 initially failed independent verification because `closeConnection()` was skipped after an `open()` failure. Added cleanup and regression tests; independent verification approved. No actual device install/launch was run for this work unit.
+- 2026-09-29: User authorized and created SQL-06 work-unit commit `239e3bc` (`feat(persistence): initialize SQLite node repository`); task-document commit evidence recorded in `ae73a5b`.
+- 2026-09-29: SQL-07 exploration found that replacing the seed coordinator after user interaction could reset communication state. User chose an accessible loading message while interactions are unavailable, then display persisted nodes or in-memory fallback.
+- 2026-09-29: SQL-07 implemented composition-root SQLite binding, async HomePage loading/fallback, accessible statuses, and the functional definition update. Independent verification approved. No Android install/launch was run.
+- 2026-09-29: User explicitly authorized the SQL-07 commit; created `30d6266` (`feat(presentation): load communication tree from SQLite`).
+- 2026-09-29: User selected persisting tree edits as the next Issue #7 area. SQL-11 read-only exploration found no editor route/page/use case. RF-023 requires create/edit/order/duplicate/deactivate and persistence; RF-020/021/022 require PIN-protected editor entry/session; RF-026 requires preview before publishing. Stable IDs/order/fixed-home fields already exist, but the repository only initializes/seeds/loads.
+- 2026-09-29: User chose an application/infrastructure persistence API only; PIN-gated editor UI remains out of scope. User approved transactional batch upsert: preserve omitted nodes, deactivate with `enabled: false`, no physical delete/full-tree replacement, return the persisted full tree. Detailed plan is in `odd/tasks/issue-7-node-edit-persistence.md`.
+- 2026-09-29: User authorized one SQL-14 local commit after the 470-line tracked candidate size and stateful-fake test limitation were disclosed. Commit `bc485be` (`feat(persistence): add transactional node upsert API`) includes 537 insertions and 9 deletions including task documents. No push or PR.
+- 2026-09-29: User selected real SQLite upsert validation on the tablet. Read-only mapping confirmed the repository accepts a custom database name and plugin exposes `deleteDatabase`. Created plan `odd/tasks/issue-7-sqlite-upsert-validation.md`; temporary harness uses only a uniquely named disposable database.
+- 2026-09-29: Pre-install independent checks passed (86 tests, typecheck, arch, format, build, Capacitor sync, Gradle assembleDebug, diff check); target `HVA790ZA` / `TB330FU` is online.
+- 2026-09-29: User explicitly authorized one debug install/replacement and launch on `HVA790ZA` / `TB330FU` for SQL-17; do not clear logs, and only use the disposable DB.
+- 2026-09-29: The authorized `pnpm android:run -- HVA790ZA` attempt failed before adb/Capacitor because pnpm passed `--` into runner arguments. Read-only diagnosis found corrected syntax `pnpm run android:run -- HVA790ZA`; no device change or SQL-17 log occurred.
+- 2026-09-29: User freshly authorized `pnpm run android:run -- HVA790ZA`; it also failed before adb/Capacitor with the separator forwarded as an extra target. No log marker or device change. Read-only diagnosis found no documented safe pnpm separator form; direct `node scripts/android-target-runner.mjs run HVA790ZA` yields the expected argv.
+- 2026-09-29: User directed us to begin the immediate pending tablet validation; interpreted as authorization for one direct runner invocation on `HVA790ZA` using only the disposable DB. Do not clear logs; do not retry if it fails.
+- 2026-10-10: Direct runner deployed the debug APK once. Read-only follow-up logs confirmed `upsert-readback-success` and `rollback-success`, then initial `cleanup-close-failure`, `cleanup-delete-failure`, and `final-failure`. Native source inspection found each repository operation already closes its connection and Android `deleteDatabase` requires an open RW connection.
+- 2026-10-10: User explicitly authorized one cleanup-only launch. It deleted `tree-communicator-sql17-upsert-smoke-1791626506653SQLite.db`; logcat showed post-delete list absent and marker `success; deletedDatabaseCount=1; remainingDatabaseCount=0`. No retry/relaunch, log clear, shell deletion, or production DB access. One `triggerEvent` JavaScript error appeared before cleanup; no app-side SQLite error observed.
+- 2026-10-10: Removed temporary source helper/hook and regenerated Android assets. Post-cleanup verification passed: 86 tests, typecheck, architecture, formatting, build, Capacitor sync, Gradle assembleDebug, and diff check. No SQL-17 markers remain in source or generated assets; HomePage SCSS budget warning persists. No commit/push/PR; evidence commit awaits explicit authorization.
+- 2026-09-29: SQL-14 implementation initially failed independent review because its static fake did not reflect writes. Converted to a stateful fake and independent verification approved. Writer and verifier passed `pnpm test:ci` (86 tests), typecheck, arch, format, build, and diff-check. SQL is not executed against a real SQLite engine. Code/spec diff is 459 insertions/8 deletions; with 11/1 in the issue task document, total tracked diff is 470/9—above target, disclose before commit.
+
+## Evidence
+- `package.json`: `@capacitor-community/sqlite` dependency added as `^8.1.1`.
+- `pnpm-lock.yaml`: SQLite 8.1.1 and transitive dependencies locked.
+- `android/capacitor.settings.gradle`, `android/app/capacitor.build.gradle`: Capacitor sync registered SQLite and restored registration for the already-declared text-to-speech plugin.
+- `pnpm add @capacitor-community/sqlite@8`: passed.
+- `pnpm exec cap sync android`: passed; six Android plugins detected, including SQLite 8.1.1.
+- `cd android && ./gradlew assembleDebug`: passed (`BUILD SUCCESSFUL`).
+- `pnpm typecheck`, `pnpm arch`, `pnpm android:targets`: passed. Target: `HVA790ZA | device | TB330FU`.
+- Temporary development hook reported `TREE_COMMUNICATOR_SQLITE_SMOKE: start create/write`, `closed after write`, `reopen/read`, `success value=tree-communicator-sqlite-smoke-ok`, and `final close` in Android logcat on `HVA790ZA` (`TB330FU`). It was removed after the run; the final `HomePage` contains no smoke invocation and `src/app/infrastructure/persistence/sqlite-smoke.ts` is absent.
+- Native `gentle_review assess` was unavailable/returned unassessable. Independent verification passed `pnpm install --frozen-lockfile`, `pnpm test:ci` (58 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `cd android && ./gradlew assembleDebug`, and `git diff --check`. It also inspected the retained device log evidence; no blocker found. The verifier did not perform a fresh install/launch.
+- Active branch is `feat/issue-7-persistencia-pictogramas-copias`; work-unit commit `df6a8d9` (`feat(persistence): integrate local SQLite for Android`) was created after explicit user authorization.
+- SQL-04 writer checks passed: `pnpm test:ci` (64 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `git diff --check`.
+- Independent SQL-04 verification passed the same checks and approved the finite-range correction. It confirmed the test checks SQL structure and finite boundary declarations but does not execute the migration against a SQLite engine; no behavior-level SQLite constraint test was added.
+- SQL-04 implementation commit: `66ba250` (`feat(persistence): add node schema migration v1`).
+- SQL-06 writer and independent verification passed: `pnpm test:ci` (75 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `pnpm build`, `git diff --check`. Build emitted the existing `home.page.scss` budget warning. No hardware runtime check was run.
+- SQL-06 commit: `239e3bc` (`feat(persistence): initialize SQLite node repository`). Commit includes 855 insertions across implementation, focused tests, and task evidence; it is larger than the 400-line planning target, so keep dependent review slices narrow.
+- SQL-07 writer and independent verifier passed: `pnpm test:ci` (79 tests), `pnpm typecheck`, `pnpm arch`, `pnpm format:check`, `pnpm build`, `git diff --check`. Build passes with a HomePage SCSS budget warning (3.89 kB vs 2.00 kB warning limit) and unsupported Browserslist entries. No hardware runtime check was run.
+- SQL-07 changed paths: `src/main.ts`, `src/app/presentation/communication-node-repository.token.ts`, HomePage TS/template/SCSS/spec, and `docs/DEFINICION_PROYECTO.md`. Native assess returned unassessable; separate independent verification approved. The verifier noted an existing-style untracked 500 ms confirmation cleanup timeout after destroy; it is unrelated to startup and was not changed.
+- SQL-07 commit: `30d6266` (`feat(presentation): load communication tree from SQLite`), 350 insertions and 78 deletions across 8 files.
+
+## Next work unit approved: initial SQLite schema and migrations
+
+Read-only mapping found that the only existing persisted-domain candidate is `CommunicationNode`; settings, SMS contacts, statistics, and history do not yet have domain models. Requirements mandate local SQLite persistence, stable node IDs, and migrations that preserve settings, but do not specify placeholder table fields for not-yet-modeled data.
+
+The user confirmed a node-only v1. Implement a versioned initial infrastructure migration for all current `CommunicationNode` fields and the parent relationship, with focused migration tests. Defer settings, SMS contacts, statistics, and history tables until their models/use cases define their data. Do not add application repositories/ports, connect the tree to SQLite, or change `HomePage` in this work unit.
+
+### Acceptance criteria for `SQL-04`
+- The infrastructure migration catalog exposes one deterministic initial version for `communication_nodes`.
+- Every required/optional field in the current `CommunicationNode` model has an appropriate SQL column and nullability; IDs remain stable text keys.
+- The parent relation is represented without changing navigation semantics; valid `action` values are constrained to the domain union.
+- The migration catalog has focused tests for version/order and the table's columns/constraints/indexes.
+- No future-entity tables, repository, runtime wiring, or presentation changes are introduced.
+
+## Next point discovery: initialize SQLite and load persisted nodes
+
+Read-only mapping found that `main.ts` bootstraps Angular without an app initializer; HomePage currently creates its coordinator from a presentation-local `PRESENTATION_SEED_TREE`. The v1 migration catalog is not yet applied anywhere. SQLite 8.1.1 supports registering version upgrades before `createConnection`/`open`; application persistence would need a narrow repository port and an infrastructure adapter, with no Capacitor imports in domain/application.
+
+Product decisions resolved: promote the current presentation tree to the official initial seed and insert it only when the DB is empty; if SQLite initialization/load fails, continue with the seed in memory and display a clear Spanish warning that it is not saved.
+
+The work is forecast to add roughly 450–600 authored changed lines across DB initialization/repository and HomePage integration/tests. Current branch history is already about 400 authored lines excluding generated Gradle files. User selected `feature-branch-chain`: keep the issue branch as the integration/tracker branch and review SQL-06 and SQL-07 as dependent slices. No PRs or pushes are authorized yet.
+
+## SQL-11 exploration: tree edit persistence
+
+Read-only mapping found no editor route/page or application write use case. `CommunicationNodeRepository` exposes only `initializeAndLoad`; SQLite has one-time seed/load and seed transaction support. Existing schema already stores stable IDs, parent IDs, positions, enabled/locked/fixed-home metadata. Requirements: RF-023 mandates create, edit, order, duplicate, deactivate and persistence; RF-020/021/022 require PIN-gated configuration; RF-026 requires preview before publishing; RD-004 requires stable IDs; RF-010b/RF-052 preserve `Me encuentro mal` in the first home cell. Physical deletion/cascade behavior is not specified, so do not invent it.
+
+## Next step
+SQL-14 is committed as `bc485be`; tests use a stateful fake and do not execute upsert SQL against real SQLite. The temporary helper passed pre-install checks. Both pnpm forms with `--` failed before adb/Capacitor; no device change or SQL-17 marker occurred. Read-only diagnosis found direct `node scripts/android-target-runner.mjs run HVA790ZA` is the file-demonstrable argv invocation. Ask fresh authorization before using it; never touch production DB. No push or PR.

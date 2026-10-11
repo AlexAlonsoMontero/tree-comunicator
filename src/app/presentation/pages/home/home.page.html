@@ -5,6 +5,7 @@
         class="control-button"
         type="button"
         aria-label="Volver al nivel anterior"
+        [disabled]="isLoading"
         (click)="goBack()"
       >
         Atrás
@@ -14,6 +15,7 @@
         class="control-button"
         type="button"
         aria-label="Volver al inicio"
+        [disabled]="isLoading"
         (click)="startOver()"
       >
         Inicio
@@ -21,45 +23,58 @@
     </nav>
 
     <section class="communication-grid" aria-label="Opciones de comunicación">
-      @for (option of communicationOptions; track option.id) {
-        <button
-          class="communication-option {{ option.colorClass }}"
-          [class.communication-option--focused]="focusedOptionId === option.id"
-          [class.communication-option--confirming]="
-            confirmingOptionId === option.id ||
-            (confirmationProgress > 0 && focusedOptionId === option.id)
-          "
-          [style.--confirmation-progress]="confirmationProgress + '%'"
-          type="button"
-          [attr.aria-label]="option.ariaLabel"
-          [attr.aria-pressed]="focusedOptionId === option.id"
-          [attr.aria-busy]="
-            confirmingOptionId === option.id ||
-            (confirmationProgress > 0 && focusedOptionId === option.id)
-              ? 'true'
-              : null
-          "
-          (pointerdown)="beginPress(option.id)"
-          (pointerup)="endPress(option.id)"
-          (pointerleave)="cancelPress()"
-          (pointercancel)="cancelPress()"
-          (keydown.enter)="beginPress(option.id, $event)"
-          (keyup.enter)="endPress(option.id)"
-          (keydown.space)="beginPress(option.id, $event)"
-          (keyup.space)="endPress(option.id)"
-          (contextmenu)="$event.preventDefault()"
-        >
-          <span class="communication-option__pictogram" aria-hidden="true">{{ option.emoji }}</span>
-          <span class="communication-option__label">{{ option.label }}</span>
-        </button>
+      @if (isLoading) {
+        <p class="communicator__status" role="status" aria-live="polite">{{ loadingMessage }}</p>
+      } @else {
+        @for (option of communicationOptions; track option.id) {
+          <button
+            class="communication-option {{ option.colorClass }}"
+            [class.communication-option--focused]="focusedOptionId === option.id"
+            [class.communication-option--confirming]="
+              confirmingOptionId === option.id ||
+              (confirmationProgress > 0 && focusedOptionId === option.id)
+            "
+            [style.--confirmation-progress]="confirmationProgress + '%'"
+            type="button"
+            [attr.aria-label]="option.ariaLabel"
+            [attr.aria-pressed]="focusedOptionId === option.id"
+            [attr.aria-busy]="
+              confirmingOptionId === option.id ||
+              (confirmationProgress > 0 && focusedOptionId === option.id)
+                ? 'true'
+                : null
+            "
+            (pointerdown)="beginPress(option.id)"
+            (pointerup)="endPress(option.id)"
+            (pointerleave)="cancelPress()"
+            (pointercancel)="cancelPress()"
+            (keydown.enter)="beginPress(option.id, $event)"
+            (keyup.enter)="endPress(option.id)"
+            (keydown.space)="beginPress(option.id, $event)"
+            (keyup.space)="endPress(option.id)"
+            (contextmenu)="$event.preventDefault()"
+          >
+            <span class="communication-option__pictogram" aria-hidden="true">{{
+              option.emoji
+            }}</span>
+            <span class="communication-option__label">{{ option.label }}</span>
+          </button>
+        }
       }
     </section>
+
+    @if (showPersistenceWarning) {
+      <p class="communicator__warning" role="status" aria-live="polite">
+        {{ persistenceWarningMessage }}
+      </p>
+    }
 
     <nav class="communicator__bar communicator__bar--bottom" aria-label="Controles del comunicador">
       <button
         class="control-button"
         type="button"
         aria-label="Repetir la opción enfocada o la frase actual"
+        [disabled]="isLoading"
         (click)="repeatFocused()"
       >
         Repetir
@@ -67,7 +82,7 @@
       <button
         class="control-button control-button--no-option"
         type="button"
-        [disabled]="!hasMoreOptions && !canOpenNoOptionFallback"
+        [disabled]="isLoading || (!hasMoreOptions && !canOpenNoOptionFallback)"
         [attr.aria-describedby]="hasMoreOptions ? null : 'no-option-explanation'"
         [attr.aria-label]="noOptionAriaLabel"
         (click)="showNextOptions()"
@@ -81,6 +96,7 @@
         class="control-button"
         type="button"
         aria-label="Abrir configuración con pulsación mantenida"
+        [disabled]="isLoading"
       >
         Configuración
       </button>
