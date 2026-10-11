@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CommunicationNode } from '../../domain/communication-navigation';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../domain/default-pictogram-emojis';
 import {
   DATABASE_NAME,
   LATEST_DATABASE_VERSION,
@@ -29,7 +30,7 @@ const INITIAL_TREE: readonly CommunicationNode[] = [
 ];
 
 describe('SQLiteCommunicationNodeRepository', () => {
-  it('registers v1 upgrades before opening the latest database version', async () => {
+  it('registers ordered upgrades before opening the latest database version', async () => {
     const sqlite = createSQLiteClient({ count: 1, rows: [] });
     const repository = new SQLiteCommunicationNodeRepository(sqlite);
 
@@ -50,6 +51,13 @@ describe('SQLiteCommunicationNodeRepository', () => {
           toVersion: 1,
           statements: expect.arrayContaining([
             expect.stringContaining('CREATE TABLE communication_nodes'),
+          ]),
+        },
+        {
+          toVersion: 2,
+          statements: expect.arrayContaining([
+            'ALTER TABLE communication_nodes ADD COLUMN pictogram_emoji TEXT',
+            expect.stringContaining('SET pictogram_emoji = CASE id'),
           ]),
         },
       ],
@@ -145,6 +153,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
             'none',
             null,
             null,
+            DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell'],
             null,
             1,
           ],
@@ -164,6 +173,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
             'none',
             'Necesito agua',
             null,
+            DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['need-water'],
             null,
             null,
           ],
@@ -218,6 +228,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
           action: 'initial-sms',
           phrase_part: null,
           pictogram_path: 'pictograms/feel.svg',
+          pictogram_emoji: '🤒',
           color_token: 'alert',
           is_fixed_home_option: 1,
         },
@@ -234,6 +245,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
           action: 'update-sms',
           phrase_part: 'Necesito agua',
           pictogram_path: null,
+          pictogram_emoji: null,
           color_token: null,
           is_fixed_home_option: null,
         },
@@ -254,6 +266,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
         hasOptionalDetails: true,
         action: 'initial-sms',
         pictogramPath: 'pictograms/feel.svg',
+        pictogramEmoji: '🤒',
         colorToken: 'alert',
         isFixedHomeOption: true,
       },
@@ -290,6 +303,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
           action: 'external-call',
           phrase_part: null,
           pictogram_path: null,
+          pictogram_emoji: null,
           color_token: null,
           is_fixed_home_option: null,
         },
@@ -316,6 +330,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
       phrasePart: 'Necesito agua fría',
       position: 2,
       pictogramPath: 'pictograms/water-cold.svg',
+      pictogramEmoji: '💧',
       colorToken: 'need',
     });
     const inserted = createNode({
@@ -329,6 +344,7 @@ describe('SQLiteCommunicationNodeRepository', () => {
       hasOptionalDetails: true,
       action: 'update-sms',
       pictogramPath: 'pictograms/snack.svg',
+      pictogramEmoji: '🍽️',
       colorToken: 'food',
     });
 
@@ -355,11 +371,11 @@ describe('SQLiteCommunicationNodeRepository', () => {
       set: [
         {
           statement: expect.stringContaining('ON CONFLICT(id) DO UPDATE SET'),
-          values: expect.arrayContaining(['need-water', 'Agua fría', 'Necesito agua fría']),
+          values: expect.arrayContaining(['need-water', 'Agua fría', 'Necesito agua fría', '💧']),
         },
         {
           statement: expect.stringContaining('ON CONFLICT(id) DO UPDATE SET'),
-          values: expect.arrayContaining(['new-snack', 'Comida', 'Quiero comida']),
+          values: expect.arrayContaining(['new-snack', 'Comida', 'Quiero comida', '🍽️']),
         },
       ],
     });
@@ -645,6 +661,7 @@ function rowFromNode(node: CommunicationNode): Record<string, unknown> {
     action: node.action,
     phrase_part: node.phrasePart ?? null,
     pictogram_path: node.pictogramPath ?? null,
+    pictogram_emoji: node.pictogramEmoji ?? null,
     color_token: node.colorToken ?? null,
     is_fixed_home_option:
       node.isFixedHomeOption === undefined ? null : node.isFixedHomeOption ? 1 : 0,
@@ -665,8 +682,9 @@ function rowFromSerializedNode(values: readonly unknown[]): Record<string, unkno
     action: values[9],
     phrase_part: values[10],
     pictogram_path: values[11],
-    color_token: values[12],
-    is_fixed_home_option: values[13],
+    pictogram_emoji: values[12],
+    color_token: values[13],
+    is_fixed_home_option: values[14],
   };
 }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CommunicationNode } from '../domain/communication-navigation';
 import type { CommunicationNodeRepository } from './communication-node-repository';
@@ -13,6 +13,8 @@ const PERSISTED_TREE: readonly CommunicationNode[] = [
 ];
 
 describe('loadCommunicationNodes', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('loads nodes from the repository after initialization', async () => {
     const repository: CommunicationNodeRepository = {
       initializeAndLoad: async (initialNodes) => {
@@ -43,7 +45,70 @@ describe('loadCommunicationNodes', () => {
       error: failure,
     });
   });
+
+  it('uses the initial tree after a bounded timeout when repository initialization never settles', async () => {
+    vi.useFakeTimers();
+    const repository: CommunicationNodeRepository = {
+      initializeAndLoad: () => new Promise<readonly CommunicationNode[]>(() => {}),
+      saveNodes: async () => INITIAL_TREE,
+    };
+
+    const result = loadCommunicationNodes(repository, INITIAL_TREE);
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    const loaded = await result;
+    expect(loaded.nodes).toBe(INITIAL_TREE);
+    expect(loaded.source).toBe('in-memory-fallback');
+    expect(loaded.error).toBeInstanceOf(Error);
+    expect((loaded.error as Error).message).toBe(
+      'Persistent communication tree load timed out after 5000 ms.',
+    );
+  });
+
+  it('keeps the timeout fallback result when repository initialization rejects late', async () => {
+    vi.useFakeTimers();
+    const startup = deferred<readonly CommunicationNode[]>();
+    const repository: CommunicationNodeRepository = {
+      initializeAndLoad: () => startup.promise,
+      saveNodes: async () => INITIAL_TREE,
+    };
+
+    const result = loadCommunicationNodes(repository, INITIAL_TREE);
+    await vi.advanceTimersByTimeAsync(5_000);
+    await expect(result).resolves.toMatchObject({
+      nodes: INITIAL_TREE,
+      source: 'in-memory-fallback',
+    });
+
+    startup.reject(new Error('sqlite returned late'));
+    await Promise.resolve();
+    await expect(result).resolves.toMatchObject({
+      nodes: INITIAL_TREE,
+      source: 'in-memory-fallback',
+    });
+  });
 });
+
+interface Deferred<T> {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T) => void;
+  readonly reject: (reason?: unknown) => void;
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve: ((value: T) => void) | undefined;
+  let reject: ((reason?: unknown) => void) | undefined;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  if (resolve === undefined || reject === undefined) {
+    throw new Error('Deferred promise callbacks were not initialized.');
+  }
+
+  return { promise, resolve, reject };
+}
 
 function createNode(
   node: Pick<CommunicationNode, 'id' | 'label' | 'position'> & Partial<CommunicationNode>,

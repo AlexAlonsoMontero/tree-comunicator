@@ -1,6 +1,5 @@
 import { CapacitorSQLite } from '@capacitor-community/sqlite';
 import type {
-  capSQLiteSet,
   capSQLiteValues,
   capSQLiteVersionUpgrade,
   CapacitorSQLitePlugin,
@@ -11,13 +10,13 @@ import type {
   CommunicationNode,
   CommunicationNodeAction,
 } from '../../domain/communication-navigation';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../domain/default-pictogram-emojis';
 import { COMMUNICATION_NODE_ACTIONS, DATABASE_MIGRATIONS } from './migrations';
 
 const DATABASE_NAME = 'tree-communicator';
 const LATEST_DATABASE_VERSION = Math.max(
   ...DATABASE_MIGRATIONS.map((migration) => migration.version),
 );
-
 const LOAD_NODES_SQL = `SELECT
   id,
   parent_id,
@@ -31,6 +30,7 @@ const LOAD_NODES_SQL = `SELECT
   action,
   phrase_part,
   pictogram_path,
+  pictogram_emoji,
   color_token,
   is_fixed_home_option
 FROM communication_nodes
@@ -49,9 +49,10 @@ const UPSERT_NODE_SQL = `INSERT INTO communication_nodes (
   action,
   phrase_part,
   pictogram_path,
+  pictogram_emoji,
   color_token,
   is_fixed_home_option
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
   parent_id = excluded.parent_id,
   label = excluded.label,
@@ -64,6 +65,7 @@ ON CONFLICT(id) DO UPDATE SET
   action = excluded.action,
   phrase_part = excluded.phrase_part,
   pictogram_path = excluded.pictogram_path,
+  pictogram_emoji = excluded.pictogram_emoji,
   color_token = excluded.color_token,
   is_fixed_home_option = excluded.is_fixed_home_option`;
 
@@ -122,7 +124,9 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
     let operationError: unknown;
     try {
       await this.sqlite.open({ database: this.databaseName, readonly: false });
-      return await work();
+      const result = await work();
+
+      return result;
     } catch (error: unknown) {
       operationError = error;
       throw error;
@@ -174,10 +178,11 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
   action,
   phrase_part,
   pictogram_path,
+  pictogram_emoji,
   color_token,
   is_fixed_home_option
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          values: serializeNode(node),
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          values: serializeNode(node, { useDefaultEmojiForKnownNode: true }),
         })),
       });
       await this.sqlite.commitTransaction({ database: this.databaseName, readonly: false });
@@ -204,7 +209,7 @@ export class SQLiteCommunicationNodeRepository implements CommunicationNodeRepos
         transaction: false,
         set: nodes.map((node) => ({
           statement: UPSERT_NODE_SQL,
-          values: serializeNode(node),
+          values: serializeNode(node, { useDefaultEmojiForKnownNode: false }),
         })),
       });
       await this.sqlite.commitTransaction({ database: this.databaseName, readonly: false });
@@ -291,7 +296,10 @@ function orderNodesForBatchUpsert(
   return orderedNodes;
 }
 
-function serializeNode(node: CommunicationNode): unknown[] {
+function serializeNode(
+  node: CommunicationNode,
+  options: Readonly<{ useDefaultEmojiForKnownNode: boolean }>,
+): unknown[] {
   return [
     node.id,
     node.parentId,
@@ -305,6 +313,9 @@ function serializeNode(node: CommunicationNode): unknown[] {
     node.action,
     node.phrasePart ?? null,
     node.pictogramPath ?? null,
+    node.pictogramEmoji ??
+      (options.useDefaultEmojiForKnownNode ? DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID[node.id] : null) ??
+      null,
     node.colorToken ?? null,
     node.isFixedHomeOption === undefined ? null : booleanToInteger(node.isFixedHomeOption),
   ];
@@ -324,6 +335,7 @@ function mapRowToNode(row: DatabaseRow): CommunicationNode {
     action: actionValue(row, 'action'),
     ...optionalStringProperty('phrasePart', optionalString(row, 'phrase_part')),
     ...optionalStringProperty('pictogramPath', optionalString(row, 'pictogram_path')),
+    ...optionalStringProperty('pictogramEmoji', optionalString(row, 'pictogram_emoji')),
     ...optionalStringProperty('colorToken', optionalString(row, 'color_token')),
     ...optionalBooleanProperty('isFixedHomeOption', optionalBoolean(row, 'is_fixed_home_option')),
   };

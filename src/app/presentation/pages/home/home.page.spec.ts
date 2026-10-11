@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { HomePage } from './home.page';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../../domain/default-pictogram-emojis';
 import { VoiceOutput } from '../../../application/voice-output';
 import { CapacitorVoiceOutput } from '../../../infrastructure/voice/capacitor-voice-output';
 import { VOICE_OUTPUT } from './home.page';
@@ -8,6 +9,8 @@ import { COMMUNICATION_NODE_REPOSITORY } from '../../communication-node-reposito
 import type { CommunicationNodeRepository } from '../../../application/communication-node-repository';
 import type { CommunicationNode } from '../../../domain/communication-navigation';
 import { vi } from 'vitest';
+
+const UNKNOWN_NODE_PICTOGRAM_FALLBACK = '💬';
 
 describe('HomePage', () => {
   let component: HomePage;
@@ -46,6 +49,7 @@ describe('HomePage', () => {
         id: 'feeling-unwell',
         label: 'Me encuentro mal',
         speechText: 'Me encuentro mal',
+        pictogramEmoji: DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell']!,
         position: 0,
         isFixedHomeOption: true,
       }),
@@ -59,6 +63,10 @@ describe('HomePage', () => {
     await configureHomePageTestBed({ resolveStartup: true, nodes: persistedNodes });
 
     expect(gridOptionLabels()).toEqual(['Me encuentro mal', 'Agua guardada']);
+    expect(gridOptionEmojis()).toEqual([
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell'],
+      UNKNOWN_NODE_PICTOGRAM_FALLBACK,
+    ]);
     expect(textContent('.communicator__warning')).toBe('');
     expect(voice.speak).not.toHaveBeenCalled();
   });
@@ -79,6 +87,50 @@ describe('HomePage', () => {
       'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
     );
     expect(warning?.closest('.communication-grid')).not.toBe(grid);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('exits startup loading with seed options and a warning when persistence never settles', async () => {
+    await configureHomePageTestBed({ resolveStartup: false, keepFakeTimersDuringStartup: true });
+    fixture.autoDetectChanges();
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(1);
+    await flushMicrotasks();
+
+    expect(textContent('.communicator__status')).toBe('');
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(textContent('.communicator__warning')).toBe(
+      'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
+    );
+    expect(actionButton('Me encuentro mal').disabled).toBe(false);
+    expect(actionButton('Repetir').disabled).toBe(false);
+    expect(actionButton('Otras opciones').disabled).toBe(false);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('uses the in-memory fallback and exits loading when startup throws synchronously', async () => {
+    await configureHomePageTestBed({ resolveStartup: true, throwStartupSynchronously: true });
+
+    expect(textContent('.communicator__status')).toBe('');
+    expect(gridOptionLabels()).toEqual([
+      'Me encuentro mal',
+      'Necesito algo',
+      'Quiero algo',
+      'No quiero',
+    ]);
+    expect(textContent('.communicator__warning')).toBe(
+      'No se pudo confirmar el guardado local. Podés comunicarte con las opciones iniciales.',
+    );
+    expect(actionButton('Me encuentro mal').disabled).toBe(false);
+    expect(actionButton('Repetir').disabled).toBe(false);
+    expect(actionButton('Otras opciones').disabled).toBe(false);
     expect(voice.speak).not.toHaveBeenCalled();
   });
 
@@ -312,13 +364,19 @@ describe('HomePage', () => {
     expect(voice.speak).toHaveBeenCalledWith('Me encuentro mal');
   });
 
-  it('renders the initial coordinator snapshot with four root options and the fallback phrase', () => {
+  it('renders the initial coordinator snapshot with four root options, seed pictograms, and the fallback phrase', () => {
     expect(currentPhrase()).toBe('Elegí una opción');
     expect(gridOptionLabels()).toEqual([
       'Me encuentro mal',
       'Necesito algo',
       'Quiero algo',
       'No quiero',
+    ]);
+    expect(gridOptionEmojis()).toEqual([
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['feeling-unwell'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['need-something'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['want-something'],
+      DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID['reject'],
     ]);
     expect(actionButton('Otras opciones').disabled).toBe(false);
   });
@@ -583,6 +641,8 @@ describe('HomePage', () => {
     readonly rejectStartup?: boolean;
     readonly nodes?: readonly CommunicationNode[];
     readonly startup?: Deferred<readonly CommunicationNode[]>;
+    readonly keepFakeTimersDuringStartup?: boolean;
+    readonly throwStartupSynchronously?: boolean;
   }
 
   interface Deferred<T> {
@@ -594,20 +654,18 @@ describe('HomePage', () => {
   async function configureHomePageTestBed(options: ConfigureHomePageOptions): Promise<void> {
     fixture?.destroy();
     TestBed.resetTestingModule();
-    vi.useRealTimers();
+    if (options.keepFakeTimersDuringStartup !== true) {
+      vi.useRealTimers();
+    }
     voice = { speak: vi.fn().mockResolvedValue(undefined) };
     const startup = options.startup ?? deferred<readonly CommunicationNode[]>();
     repository = {
-      initializeAndLoad: vi.fn(async (initialNodes: readonly CommunicationNode[]) => {
-        if (!options.resolveStartup) {
-          return await startup.promise;
+      initializeAndLoad: vi.fn((initialNodes: readonly CommunicationNode[]) => {
+        if (options.throwStartupSynchronously === true) {
+          throw new Error('persistence startup failed synchronously');
         }
 
-        if (options.rejectStartup === true) {
-          throw new Error('persistence unavailable');
-        }
-
-        return options.nodes ?? initialNodes;
+        return loadStartupNodes(initialNodes, options, startup);
       }),
       saveNodes: vi.fn(async () => options.nodes ?? []),
     };
@@ -630,14 +688,38 @@ describe('HomePage', () => {
       await flushStartup();
     }
 
-    vi.useFakeTimers();
+    if (options.keepFakeTimersDuringStartup !== true) {
+      vi.useFakeTimers();
+    }
   }
 
   async function flushStartup(): Promise<void> {
     await fixture.whenStable();
-    await Promise.resolve();
+    await flushMicrotasks();
     if (!fixture.componentRef.hostView.destroyed) {
       fixture.changeDetectorRef.detectChanges();
+    }
+  }
+
+  async function loadStartupNodes(
+    initialNodes: readonly CommunicationNode[],
+    options: ConfigureHomePageOptions,
+    startup: Deferred<readonly CommunicationNode[]>,
+  ): Promise<readonly CommunicationNode[]> {
+    if (!options.resolveStartup) {
+      return await startup.promise;
+    }
+
+    if (options.rejectStartup === true) {
+      throw new Error('persistence unavailable');
+    }
+
+    return options.nodes ?? initialNodes;
+  }
+
+  async function flushMicrotasks(): Promise<void> {
+    for (let pendingMicrotask = 0; pendingMicrotask < 5; pendingMicrotask += 1) {
+      await Promise.resolve();
     }
   }
 
@@ -701,6 +783,12 @@ describe('HomePage', () => {
 
   function gridOptionLabels(): string[] {
     return Array.from(nativeElement().querySelectorAll('.communication-option__label')).map(
+      (element) => element.textContent?.trim() ?? '',
+    );
+  }
+
+  function gridOptionEmojis(): string[] {
+    return Array.from(nativeElement().querySelectorAll('.communication-option__pictogram')).map(
       (element) => element.textContent?.trim() ?? '',
     );
   }

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../domain/default-pictogram-emojis';
 import { COMMUNICATION_NODE_ACTIONS, DATABASE_MIGRATIONS } from './migrations';
 
 describe('DATABASE_MIGRATIONS', () => {
   const initialMigration = DATABASE_MIGRATIONS[0];
+  const emojiMigration = DATABASE_MIGRATIONS[1];
 
-  it('exposes one deterministic initial migration with ordered SQL statements', () => {
-    expect(DATABASE_MIGRATIONS).toHaveLength(1);
+  it('exposes deterministic ordered migrations without altering the initial migration', () => {
+    expect(DATABASE_MIGRATIONS).toHaveLength(2);
     expect(initialMigration).toEqual({
       version: 1,
       description: 'Create communication node schema',
@@ -17,6 +19,15 @@ describe('DATABASE_MIGRATIONS', () => {
       'CREATE INDEX',
       'CREATE INDEX',
       'CREATE INDEX',
+    ]);
+    expect(emojiMigration).toEqual({
+      version: 2,
+      description: 'Add emoji pictograms to communication nodes',
+      statements: expect.any(Array),
+    });
+    expect(emojiMigration?.statements.map((statement) => firstSqlWords(statement))).toEqual([
+      'ALTER TABLE',
+      'UPDATE communication_nodes',
     ]);
   });
 
@@ -44,6 +55,7 @@ describe('DATABASE_MIGRATIONS', () => {
     );
     expect(createTable).toContain('phrase_part TEXT');
     expect(createTable).toContain('pictogram_path TEXT');
+    expect(createTable).not.toContain('pictogram_emoji');
     expect(createTable).toContain('color_token TEXT');
     expect(createTable).toContain(
       'is_fixed_home_option INTEGER CHECK (is_fixed_home_option IN (0, 1))',
@@ -90,6 +102,25 @@ describe('DATABASE_MIGRATIONS', () => {
 
     expect(COMMUNICATION_NODE_ACTIONS).toEqual(['none', 'initial-sms', 'update-sms']);
     expect(createTable).toContain(`action TEXT NOT NULL CHECK (action IN (${expectedActionList}))`);
+  });
+
+  it('adds pictogram_emoji in v2 and backfills only known default node ids', () => {
+    expect(emojiMigration?.statements[0]).toBe(
+      'ALTER TABLE communication_nodes ADD COLUMN pictogram_emoji TEXT',
+    );
+
+    const backfillSql = emojiMigration?.statements[1] ?? '';
+    expect(backfillSql).toContain('UPDATE communication_nodes');
+    expect(backfillSql).toContain('SET pictogram_emoji = CASE id');
+    expect(backfillSql).toContain('AND pictogram_emoji IS NULL');
+
+    for (const [nodeId, emoji] of Object.entries(DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID)) {
+      expect(backfillSql).toContain(`WHEN '${nodeId}' THEN '${emoji}'`);
+      expect(backfillSql).toContain(`'${nodeId}'`);
+    }
+
+    expect(backfillSql).not.toContain('pictogram_path');
+    expect(backfillSql).not.toContain('ELSE');
   });
 
   it('adds useful communication node indexes without future-entity tables', () => {

@@ -1,4 +1,5 @@
 import type { CommunicationNodeAction } from '../../domain/communication-navigation';
+import { DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID } from '../../domain/default-pictogram-emojis';
 
 export interface DatabaseMigration {
   readonly version: number;
@@ -15,6 +16,19 @@ export const COMMUNICATION_NODE_ACTIONS = [
 const COMMUNICATION_NODE_ACTION_SQL_VALUES = COMMUNICATION_NODE_ACTIONS.map(
   (action) => `'${action}'`,
 ).join(', ');
+
+const DEFAULT_PICTOGRAM_EMOJI_ENTRIES = Object.entries(DEFAULT_PICTOGRAM_EMOJIS_BY_NODE_ID);
+
+const DEFAULT_PICTOGRAM_EMOJI_BACKFILL_SQL = `UPDATE communication_nodes
+SET pictogram_emoji = CASE id
+${DEFAULT_PICTOGRAM_EMOJI_ENTRIES.map(
+  ([nodeId, emoji]) => `  WHEN ${sqlStringLiteral(nodeId)} THEN ${sqlStringLiteral(emoji)}`,
+).join('\n')}
+END
+WHERE id IN (${DEFAULT_PICTOGRAM_EMOJI_ENTRIES.map(([nodeId]) => sqlStringLiteral(nodeId)).join(
+  ', ',
+)})
+  AND pictogram_emoji IS NULL`;
 
 export const DATABASE_MIGRATIONS = [
   {
@@ -49,4 +63,16 @@ ON communication_nodes (action)`,
 ON communication_nodes (enabled)`,
     ],
   },
+  {
+    version: 2,
+    description: 'Add emoji pictograms to communication nodes',
+    statements: [
+      'ALTER TABLE communication_nodes ADD COLUMN pictogram_emoji TEXT',
+      DEFAULT_PICTOGRAM_EMOJI_BACKFILL_SQL,
+    ],
+  },
 ] as const satisfies readonly DatabaseMigration[];
+
+function sqlStringLiteral(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}

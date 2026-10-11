@@ -11,7 +11,7 @@
 - **Tecnología confirmada para interfaz:** Ionic Angular y TypeScript
 - **Integración nativa confirmada:** Capacitor
 - **Base de datos local confirmada:** SQLite
-- **Estado:** definición funcional inicial
+- **Estado:** definición funcional inicial, con base inicial de interfaz y persistencia local
 
 ## 2. Problema
 
@@ -149,7 +149,7 @@ Cuando un nivel tenga más de cuatro alternativas, el control fijo `Otras opcion
 
 ### 6.6 Arranque y carga local
 
-Durante el arranque, la aplicación muestra un mensaje accesible en español mientras carga el árbol desde SQLite. Las opciones de comunicación y los controles permanecen no disponibles hasta que estén listos los datos persistidos o el árbol inicial en memoria. Si no se puede confirmar la persistencia local, la aplicación usa el árbol inicial para mantener la comunicación disponible y muestra una advertencia clara sin detalles técnicos; la advertencia informa que el guardado local no pudo confirmarse.
+Durante el arranque, la aplicación muestra un mensaje accesible en español mientras carga el árbol desde SQLite. Las opciones de comunicación y los controles permanecen no disponibles hasta que estén listos los datos persistidos o el árbol inicial en memoria. Si no se puede confirmar la persistencia local, la aplicación usa el árbol inicial para mantener la comunicación disponible y muestra una advertencia clara sin detalles técnicos; la advertencia informa que el guardado local no pudo confirmarse. Si la inicialización o lectura de SQLite queda pendiente durante 5 segundos, la aplicación aplica la misma política de árbol inicial en memoria y advertencia, sin esperar indefinidamente ni afirmar que el problema nativo subyacente esté resuelto.
 
 ## 7. Sistema de alertas SMS
 
@@ -260,7 +260,9 @@ La IA no forma parte del núcleo del MVP. Cuando se incorpore, se evaluarán Qwe
 
 ### 11.0 Catálogo gráfico
 
-ARASAAC será el catálogo principal de pictogramas. Cada recurso incorporado conservará metadatos de autoría, procedencia y licencia. La aplicación permitirá además añadir fotografías y pictogramas propios desde Configuración; estos archivos permanecerán en el almacenamiento local y no se atribuirán a ARASAAC.
+La representación inicial persistida de pictogramas usa emojis Unicode guardados como datos del nodo. Esta decisión permite mostrar pictogramas sin conexión desde la interfaz y la persistencia actuales, sin descargar todavía recursos gráficos externos.
+
+ARASAAC sigue siendo el catálogo principal previsto para pictogramas en una fase posterior. Cada recurso incorporado desde ese catálogo deberá conservar metadatos de autoría, procedencia y licencia. La aplicación permitirá además añadir fotografías y pictogramas propios desde Configuración en una fase posterior; esos archivos deberán copiarse al almacenamiento privado de la aplicación, permanecer disponibles sin conexión y no atribuirse a ARASAAC.
 
 ### 11.1 Dirección visual
 
@@ -319,8 +321,8 @@ Dominio TypeScript puro
 Infraestructura: adaptadores Capacitor / Android
 ├── SQLite local (`@capacitor-community/sqlite` 8.x)
 ├── Text-to-Speech offline (`@capacitor-community/text-to-speech` 8.x)
-├── Sistema de archivos local (`@capacitor/filesystem`)
-├── Importación de imágenes (`@capacitor/camera`)
+├── Sistema de archivos local (`@capacitor/filesystem`) para futura gestión de imágenes propias y recursos gráficos
+├── Importación futura de imágenes (`@capacitor/camera`)
 ├── Plugin SMS propio en Kotlin
 ├── Plugin propio de almacenamiento seguro con Android Keystore
 └── Archivos locales
@@ -349,7 +351,7 @@ Incluido:
 - Aplicación Android instalable para tablet y móvil, priorizando tablet horizontal.
 - Cuadrícula de cuatro opciones.
 - Árbol local editable.
-- Texto, pictogramas y voz offline.
+- Texto, pictogramas y voz offline; la representación inicial de pictogramas usa emojis Unicode persistidos como datos del nodo.
 - Pulsación breve de lectura y pulsación mantenida de confirmación.
 - Navegación atrás, inicio y repetir.
 - PIN de configuración.
@@ -385,7 +387,7 @@ Posterior al MVP:
 | Falta de Internet              | Funciones principales locales y salida offline para IA                                                   |
 | Interfaz sobrecargada          | Cuatro opciones, paginación y detalles opcionales                                                        |
 | Uso indebido de datos de salud | Datos locales, PIN y exportación explícita                                                               |
-| Licencia de pictogramas        | Conservar autoría, procedencia y licencia de ARASAAC; separar claramente los recursos propios            |
+| Licencia de pictogramas        | Usar emojis Unicode como representación inicial; cuando se incorpore ARASAAC, conservar autoría, procedencia y licencia; separar claramente los recursos propios |
 
 ## 16. Criterio general de éxito
 

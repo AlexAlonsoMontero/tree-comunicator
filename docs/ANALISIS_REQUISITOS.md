@@ -133,17 +133,17 @@ El sistema debe cubrir comunicación general. Los requisitos de salud y SMS son 
 | RA-016 | MUST | El MVP funcionará correctamente en orientación horizontal. | En tablet horizontal no se solapan controles, no se requiere desplazamiento y se mantienen cuatro opciones principales. |
 | RA-017 | SHOULD | La orientación vertical se evaluará tras las pruebas iniciales. | Si se incorpora, mantiene las funciones esenciales sin alterar la navegación. |
 | RA-018 | SHOULD | El diseño se validará con TalkBack y Switch Access. | Los controles tienen nombre, rol, estado y orden coherente. |
-| RA-019 | MUST | ARASAAC será el catálogo principal de pictogramas. | Cada recurso conserva autoría, procedencia y licencia en sus metadatos. |
-| RA-020 | MUST | El cuidador podrá añadir imágenes propias. | La imagen se copia al almacenamiento privado de la aplicación y queda disponible sin conexión aunque se borre el original. |
-| RA-020a | MUST | La importación de imágenes propias usará `@capacitor/camera` para seleccionar desde la galería. | La captura con cámara podrá habilitarse como opción adicional. |
+| RA-019 | MUST | ARASAAC será el catálogo principal de pictogramas en una fase posterior. La representación inicial persistida usa emojis Unicode como datos del nodo. | La UI actual puede mostrar emojis sin conexión; cuando se incorporen recursos ARASAAC, cada recurso conservará autoría, procedencia y licencia en sus metadatos. |
+| RA-020 | MUST | El cuidador podrá añadir imágenes propias en una fase posterior. | La imagen se copia al almacenamiento privado de la aplicación y queda disponible sin conexión aunque se borre el original. |
+| RA-020a | MUST | La importación de imágenes propias usará `@capacitor/camera` para seleccionar desde la galería en una fase posterior. | La captura con cámara podrá habilitarse como opción adicional. |
 
 ## 4. Requisitos de datos y funcionamiento offline
 
 | ID | Prioridad | Requisito | Criterio de aceptación |
 |---|---|---|---|
 | RD-001 | MUST | Árbol, configuración, estadísticas e historial residirán en SQLite local mediante `@capacitor-community/sqlite` 8.x. | La aplicación navega y edita en modo avión. |
-| RD-002 | MUST | Los pictogramas activos estarán almacenados localmente. | Todas las rutas configuradas muestran sus imágenes sin red. |
-| RD-002a | MUST | Los pictogramas, imágenes propias y copias de seguridad usarán el sistema de archivos privado mediante `@capacitor/filesystem`. | No requieren permisos amplios de almacenamiento y permanecen disponibles sin conexión; SQLite conserva un identificador o ruta relativa interna, nunca la URI original de galería. |
+| RD-002 | MUST | Los pictogramas activos estarán almacenados localmente. La representación inicial persistida usa emojis Unicode guardados como datos del nodo. | Los emojis configurados se muestran sin red; cuando existan recursos gráficos, todas las rutas configuradas mostrarán sus imágenes sin red. |
+| RD-002a | MUST | Los pictogramas gráficos, imágenes propias y copias de seguridad usarán el sistema de archivos privado mediante `@capacitor/filesystem` en una fase posterior. | No requieren permisos amplios de almacenamiento y permanecen disponibles sin conexión; SQLite conserva un identificador o ruta relativa interna, nunca la URI original de galería. |
 | RD-003 | MUST | La voz esencial funcionará con el motor offline de Android mediante `@capacitor-community/text-to-speech` 8.x. | Las frases se reproducen en modo avión tras preparar el dispositivo. |
 | RD-004 | MUST | Cada nodo tendrá un identificador estable. | Reordenar o renombrar no rompe relaciones ni estadísticas. |
 | RD-005 | MUST | Las migraciones de base de datos conservarán la configuración. | Una prueba de actualización mantiene árbol, contactos y preferencias. |
@@ -201,6 +201,7 @@ interface CommunicationNode {
   speechText: string;
   phrasePart?: string;
   pictogramPath?: string;
+  pictogramEmoji?: string;
   colorToken?: string;
   position: number;
   enabled: boolean;
